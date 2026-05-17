@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enumeration of 1-page book embeddings</title>
+    <link href="https://cdn.jsdelivr.net/npm/vis-network@7.0.1/dist/vis-network.min.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="icon" type="image/x-icon" href="/images/favicon.jpg">
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+    <nav>
+        <h1>Enumeration of 1-page book embeddings</h1>
+        <ul>
+            <li><a href="https://github.com/ricmoccia" target="_blank">GitHub</a></li>
+            <li><a href="https://github.com/ricmoccia" target="_blank">Documentation</a></li>
+            <li><a href="https://github.com/ricmoccia" target="_blank">Thesis</a></li>
+        </ul>
+    </nav>
+
+    <div id="container">
+        <div id="grid">
+            <!-- Top-left: controlli -->
+            <div id="buttons" class="panel">
+                <h3 class="panel-title">Controls</h3>
+                <div id="buttons-up">
+                    <label for="fileInput" class="btn-left"><span class="btn-text">Upload Graph File</span> <i class="fa-solid fa-upload fa-lg"></i></label>
+                    <input type="file" id="fileInput" style="display: none;">
+                    <p id="fileName"></p>
+                    <button id="run" class="btn-left">Compute Layouts</button>
+                </div>
+                <div id="buttons-down">
+                    <button id="downloadGraph" class="btn-left"><span class="btn-text">Download Graph File</span> <i class="fa-solid fa-download fa-lg"></i></button>
+                    <label for="imageDownload" class="btn-left"><span class="btn-text">Download Image</span> <i class="fa-solid fa-camera fa-lg"></i></label>
+                    <input type="button" id="imageDownload" class="btn-left" value="Download image" style="display: none;" onclick="document.getElementById('canvasImg').click();">
+                    <a id="canvasImg" download="book-embedding"></a>
+                </div>
+            </div>
+
+            <!-- Top-right: 1-stack layout -->
+            <div class="panel">
+                <h3 class="panel-title">1-Stack Layout</h3>
+                <div id="network" class="net"></div>
+            </div>
+
+            <!-- Bottom-left: BCT -->
+            <div class="panel">
+                <h3 class="panel-title">Block-Cut Tree (BCT)</h3>
+                <div id="bct-network" class="net">
+                    <div class="placeholder">Press <em>Compute Layouts</em> to visualize the BCT for the current layout.</div>
+                </div>
+            </div>
+
+            <!-- Bottom-right: FPQ tree -->
+            <div class="panel">
+                <h3 class="panel-title">FPQ Tree</h3>
+                <div id="fpq-network" class="net">
+                    <div class="placeholder">Coming soon.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="navigationBar">
+            <button id="prev" class="arrow"><i class="fa-solid fa-arrow-left fa-xl"></i></button>
+            <span id="index"></span>
+            <button id="next" class="arrow"><i class="fa-solid fa-arrow-right fa-xl"></i></button>
+        </div>
+    </div>
+
+    <div id="footer">
+        <ul class="copyright">
+            <li>© Riccardo Moccia. All rights reserved.</li>
+        </ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@7.0.1/dist/vis-network.min.js"></script>
+    <script src="/assets/js/binary.wasm" type="application/wasm"></script>
+    <script src="/assets/js/binary.js"></script>
+</body>
+</html>

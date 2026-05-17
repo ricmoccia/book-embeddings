@@ -1,0 +1,218 @@
+/* Barra di navigazione */
+nav {
+  background-color: #08175a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+nav ul {
+  list-style-type: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+nav ul li {
+  padding: 14px 20px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+nav ul li a {
+  color: white;
+  text-decoration: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+nav ul li a:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: black;
+}
+
+nav h1 {
+  color: white;
+  padding: 1%;
+  margin: 0;
+}
+
+h1, h2 {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Layout principale: container colonna verticale, grid 2x2 al centro */
+#container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 420px 420px;
+  gap: 24px;
+  width: 100%;
+  max-width: 1300px;
+}
+
+/* Pannelli generici (riquadro grigio con titolo) */
+.panel {
+  display: flex;
+  flex-direction: column;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.panel-title {
+  margin: 0 0 12px 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  color: #08175a;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* Area di rete dentro a un panel: bordo nero, sfondo bianco */
+.net {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 0;
+  background-color: white;
+  border: 1px solid black;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Placeholder mostrato quando un riquadro non ha ancora dati */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+  color: #777;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.95rem;
+}
+
+/* Pannello dei controlli (top-left) */
+#buttons {
+  /* Eredita .panel; ridefinisce solo l'allineamento interno */
+  justify-content: space-between;
+}
+
+#buttons-up,
+#buttons-down {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+}
+
+#run {
+  display: none;
+}
+
+.btn-left {
+  border: 1px solid black;
+  margin-bottom: 10px;
+  padding: 10px;
+  font-size: 16px;
+  background-color: #dadada;
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+  color: black;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn-left:hover {
+  background-color: white;
+  cursor: pointer;
+  transform: scale(1.02);
+}
+
+#fileName {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.85rem;
+  color: #444;
+  margin: 4px 0 10px 0;
+  word-break: break-all;
+}
+
+/* Barra di navigazione tra layout (sotto la griglia) */
+#navigationBar {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  margin-top: 24px;
+}
+
+#index {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  color: #08175a;
+  min-width: 180px;
+  text-align: center;
+}
+
+.arrow {
+  cursor: pointer;
+  margin-inline: 20px;
+  font-size: 16px;
+  border: none;
+  background-color: transparent;
+}
+
+.arrow:hover {
+  transform: scale(1.1);
+}
+
+.btn-text {
+  margin-right: 20px;
+}
+
+/* Footer invariato */
+#footer {
+  text-align: center;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f0f0f0;
+  padding: 3em 0 4em 0;
+  box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.05), inset 0 0.1em 0.1em 0 rgba(0, 0, 0, 0.025);
+  font-size: 0.8em;
+}
+
+#footer .copyright {
+  cursor: default;
+  margin: 0;
+}
+
+#footer .copyright li {
+  display: inline-block;
+  line-height: 1em;
+  border-left: solid 1px rgba(128, 128, 128, 0.35);
+  padding: 0 0 0 0.5em;
+  margin: 0 0 0 0.5em;
+}
+
+#footer .copyright li:first-child {
+  border-left: 0;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+/* Responsive: a schermo stretto la griglia diventa una colonna sola */
+@media (max-width: 900px) {
+  #grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 380px 380px 380px;
+  }
+}

@@ -1,0 +1,15 @@
+# Build / toolchain (multi-GB, niente di tutto questo va su GitHub)
+emsdk/
+code/build/
+*.exe
+*.obj
+*.o
+*.a
+
+# Backup automatico del patcher (regenerato a ogni update_binary.py)
+web-system/assets/js/binary.original.js
+
+# Cose di sistema
+.DS_Store
+Thumbs.db
+.vscode/
