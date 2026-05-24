@@ -650,8 +650,15 @@ function drawBCT(bct) {
     const container = document.getElementById('bct-network');
 
     if (!bct || !bct.nodes || bct.nodes.length === 0) {
-        container.innerHTML =
-            '<div class="placeholder">Press <em>Compute Layouts</em> to visualize the BCT for the current layout.</div>';
+        // Only inject a fallback placeholder if the container does not
+        // already contain a `.placeholder` element. This way the placeholder
+        // text defined in index.html survives the initial draw and the
+        // HTML stays the single source of truth for the message shown when
+        // no BCT is available.
+        if (!container.querySelector('.placeholder')) {
+            container.innerHTML =
+                '<div class="placeholder">Upload Graph File and press Compute Layouts to visualize the BCT for the current layout.</div>';
+        }
         ensureBCTLegend();
         return;
     }
@@ -799,8 +806,12 @@ function drawFPQ(fpq, bct) {
     const container = document.getElementById('fpq-network');
 
     if (!fpq || !fpq.nodes || fpq.nodes.length === 0) {
-        container.innerHTML =
-            '<div class="placeholder">Press <em>Compute Layouts</em> to visualize the FPQ tree for the current layout.</div>';
+        // See note in drawBCT: do not clobber a placeholder already defined
+        // in the HTML; the HTML is the single source of truth for this text.
+        if (!container.querySelector('.placeholder')) {
+            container.innerHTML =
+                '<div class="placeholder">Upload Graph File and press Compute Layouts to visualize the FPQ tree for the current layout.</div>';
+        }
         return;
     }
 
