@@ -6,13 +6,20 @@
     <title>Enumeration of 1-page book embeddings</title>
     <link href="https://cdn.jsdelivr.net/npm/vis-network@7.0.1/dist/vis-network.min.css" rel="stylesheet" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="icon" type="image/x-icon" href="/images/logo.svg" style="height: 400px; width: auto;">
+    <link rel="icon" type="image/svg+xml" href="/images/logo.svg">
     <link rel="stylesheet" href="/assets/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
     <nav>
-        <h1>Enumeration of 1-page book embeddings</h1>
+        <a href="#" class="site-brand" aria-label="Home"
+           style="display: inline-block; vertical-align: middle; margin-right: 18px; line-height: 0;">
+            <img src="/images/logo.svg" alt="1-page book embeddings"
+                 style="height: 52px; width: auto; display: block;">
+        </a>
+        <h1 style="display: inline-block; vertical-align: middle; margin: 0;">
+            Enumeration of 1-page book embeddings
+        </h1>
         <ul>
             <li><a href="https://github.com/ricmoccia" target="_blank">GitHub</a></li>
             <li><a href="https://github.com/ricmoccia" target="_blank">Documentation</a></li>
@@ -22,7 +29,7 @@
 
     <div id="container">
         <div id="grid">
-            <!-- Top-left: controlli -->
+            <!-- Top-left: controls -->
             <div id="buttons" class="panel">
                 <h3 class="panel-title">Controls</h3>
                 <div id="buttons-up">
@@ -49,7 +56,7 @@
             <div class="panel">
                 <h3 class="panel-title">Block-Cut Tree (BCT)</h3>
                 <div id="bct-network" class="net">
-                    <div class="placeholder">Press <em>Compute Layouts</em> to visualize the BCT for the current layout.</div>
+                    <div class="placeholder">Press <em> Compute Layouts </em> to visualize the BCT for the current layout.</div>
                 </div>
             </div>
 
@@ -57,7 +64,7 @@
             <div class="panel">
                 <h3 class="panel-title">FPQ Tree</h3>
                 <div id="fpq-network" class="net">
-                    <div class="placeholder">Coming soon.</div>
+                    <div class="placeholder">Press <em> Compute Layouts </em> to visualize the FPQ tree for the current layout.</div>
                 </div>
             </div>
         </div>
@@ -76,7 +83,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/vis-network@7.0.1/dist/vis-network.min.js"></script>
-    <script src="/assets/js/binary.wasm" type="application/wasm"></script>
     <script src="/assets/js/binary.js"></script>
 </body>
 </html>
