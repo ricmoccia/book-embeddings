@@ -36,6 +36,8 @@ var edgeToBlock = new Map(); // key "<from>-<to>" -> block index. Built once fro
 var currentBCT = null;  // BCT being built while the C++ is still emitting it.
 var currentFPQ = null;  // FPQ being built while the C++ is still emitting it.
 var currentBlocks = null;     // blocks being built while the C++ is still emitting them.
+var bctNetwork = null;        // last vis.Network drawn in the BCT panel (for refit on resize).
+var fpqNetwork = null;        // last vis.Network drawn in the FPQ panel (for refit on resize).
 var currentIndex = 0;
 var numberOfLayouts = 24;
 
@@ -134,7 +136,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentFPQ = null;
                 currentBlocks = null;
                 currentIndex = 0;
-                callMain([fileString]);
+                // `callMain` is an Emscripten runtime method. Recent Emscripten
+                // versions no longer leak it to the global scope, so resolve it
+                // from the Module object (with a fallback to a bare global for
+                // older builds). It must be listed in EXPORTED_RUNTIME_METHODS
+                // at compile time, otherwise Module.callMain is undefined too.
+                const wasmCallMain =
+                    (typeof Module !== 'undefined' && Module.callMain) ||
+                    (typeof callMain === 'function' ? callMain : null);
+                if (typeof wasmCallMain !== 'function') {
+                    console.error('callMain is not available: add "callMain" to ' +
+                        'EXPORTED_RUNTIME_METHODS in compile-wasm.ps1 and rebuild.');
+                    return;
+                }
+                wasmCallMain([fileString]);
                 if (numberOfLayouts == 0) {
                     currentIndex = -1;
                     updateStatistics();
@@ -160,8 +175,16 @@ document.addEventListener('DOMContentLoaded', () => {
         fileToString()
             .then(fileString => {
                 if (currentIndex == layouts.length - 1) {
-                    var computeNextLayout = Module["_printNextLayout"];
-                    computeNextLayout();
+                    // `_printNextLayout` is only present if exported via
+                    // EXPORTED_FUNCTIONS. It currently is not (only `_main` is),
+                    // and main() already enumerates every layout up-front, so
+                    // this branch is a no-op. Guard it to avoid a TypeError if
+                    // someone presses Next on the very last layout.
+                    var computeNextLayout = (typeof Module !== 'undefined')
+                        ? Module["_printNextLayout"] : null;
+                    if (typeof computeNextLayout === 'function') {
+                        computeNextLayout();
+                    }
                 }
                 if (currentIndex < numberOfLayouts - 1) {
                     currentIndex++;
@@ -662,6 +685,7 @@ function drawBCT(bct) {
                 '<div class="placeholder">Upload Graph File and press Compute Layouts to visualize the BCT for the current layout.</div>';
         }
         ensureBCTLegend();
+        bctNetwork = null;
         return;
     }
 
@@ -755,13 +779,16 @@ function drawBCT(bct) {
     const options = {
         layout: { hierarchical: { enabled: false }, randomSeed: 0 },
         physics: { enabled: false },
-        interaction: { dragNodes: false, zoomView: true }
+        interaction: { dragNodes: false, zoomView: true },
+        autoResize: false // we refit explicitly via observeNetPanel's ResizeObserver.
     };
 
     const network = new vis.Network(container, { nodes: visNodes, edges: visEdges }, options);
     network.on("doubleClick", () => network.fit());
     network.once("afterDrawing", () => network.fit());
 
+    bctNetwork = network;
+    observeNetPanel('bct-network');
     ensureBCTLegend();
 }
 
@@ -814,6 +841,8 @@ function drawFPQ(fpq, bct) {
             container.innerHTML =
                 '<div class="placeholder">Upload Graph File and press Compute Layouts to visualize the FPQ tree for the current layout.</div>';
         }
+        setFPQPanelHeight(420); // back to the standard panel height.
+        fpqNetwork = null;
         return;
     }
 
@@ -877,6 +906,18 @@ function drawFPQ(fpq, bct) {
     // too close, Y_UNIT if the levels are too squashed together.
     const X_UNIT = 60;
     const Y_UNIT = 75;
+
+    // Size the FPQ panel to the tree's vertical extent: a small (shallow) tree
+    // keeps the standard panel height, a deep tree gets a taller panel (up to a
+    // cap) so it is drawn larger instead of being zoomed down to fit. The width
+    // is left to the grid column (kept fixed so the two bottom panels stay
+    // aligned); very wide trees are handled by network.fit() + pan/zoom.
+    let maxLevel = 0;
+    for (const p of positions.values()) if (p.level > maxLevel) maxLevel = p.level;
+    const STD_H = 420, MAX_H = 840, CHROME = 64;
+    let targetH = (maxLevel + 2) * Y_UNIT + CHROME;
+    targetH = Math.max(STD_H, Math.min(MAX_H, targetH));
+    setFPQPanelHeight(targetH);
 
     const visNodes = new vis.DataSet(fpq.nodes.map(n => {
         const p = positions.get(n.id) || { x: 0, level: 0 };
@@ -947,11 +988,841 @@ function drawFPQ(fpq, bct) {
     const options = {
         layout: { hierarchical: { enabled: false }, randomSeed: 0 },
         physics: { enabled: false },
-        interaction: { dragNodes: false, zoomView: true }
+        interaction: { dragNodes: false, zoomView: true },
+        autoResize: false // we refit explicitly via observeNetPanel's ResizeObserver.
     };
 
     const network = new vis.Network(container, { nodes: visNodes, edges: visEdges }, options);
     network.on("doubleClick", () => network.fit());
     // Auto-fit zoom to the panel size on the first draw.
     network.once("afterDrawing", () => network.fit());
+
+    fpqNetwork = network;
+    observeNetPanel('fpq-network');
 }
+
+// =============================================================================
+// PNG Download buttons
+// =============================================================================
+//
+// Each of the 3 graphic panels (1-stack layout, BCT, FPQ) gets a small button
+// in its top-right corner that saves the panel's canvas as a PNG file. The
+// pre-existing "Download Image" label in the controls panel (which used to
+// save only the 1-stack layout via a hidden input + #canvasImg anchor) is
+// repurposed in place to trigger the download of all 3 panels at once: it
+// keeps its `.btn-left` styling, font, background, position, and the camera
+// icon to the right of the label, but its text is changed and its click
+// handler is rewired.
+//
+// Buttons are wired via JS (idempotent, same pattern as ensureBCTLegend), so
+// no changes are required in either index.html.
+//
+// Filename convention: `<prefix>-<k>.png` where k is the 1-based layout number
+// shown in the navigation bar ("layout X of Y"). Examples for layout 17:
+//   layout-17.png   bct-17.png   fpq-17.png
+// =============================================================================
+
+/**
+ * Ensure a download button is present in each graphic panel and that the
+ * existing "Download Image" label has been repurposed to download all 3
+ * panels. Idempotent.
+ */
+function ensureDownloadButtons() {
+    addPanelDownloadButton('network',     'Download 1-stack layout as PNG', 'layout');
+    addPanelDownloadButton('bct-network', 'Download BCT as PNG',            'bct');
+    addPanelDownloadButton('fpq-network', 'Download FPQ tree as PNG',       'fpq');
+    repurposeImageDownloadButton();
+}
+
+/**
+ * Inject a small download button in the top-right corner of the panel that
+ * hosts the given vis-network container. The panel is given `position:relative`
+ * (if it isn't already) so the absolutely-positioned button anchors to it.
+ * @param {string} containerId    ID of the vis-network container element.
+ * @param {string} title          Tooltip / accessible label.
+ * @param {string} fileNamePrefix Prefix for the generated filename.
+ */
+function addPanelDownloadButton(containerId, title, fileNamePrefix) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const panel = container.parentElement;
+    if (!panel) return;
+    if (panel.querySelector('.panel-download-btn')) return; // already added
+    const cs = window.getComputedStyle(panel);
+    if (!cs.position || cs.position === 'static') panel.style.position = 'relative';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'panel-download-btn';
+    btn.title = title;
+    btn.textContent = '\u2B07 PNG'; // down arrow + PNG
+    btn.style.cssText =
+        'position:absolute; top:6px; right:8px; z-index:5; ' +
+        'font-size:11px; padding:2px 8px; cursor:pointer; ' +
+        'background:#ffffff; border:1px solid #cccccc; border-radius:3px;';
+    btn.addEventListener('click', () => downloadPanelImage(containerId, fileNamePrefix));
+    panel.appendChild(btn);
+}
+
+/**
+ * Take over the visible "Download Image" control in the controls panel and
+ * turn it into the trigger for downloading all 3 panel images at once.
+ *
+ * The visible control is the <label for="imageDownload" class="btn-left">.
+ * It carries the .btn-left CSS class (so box / font / background / position
+ * are defined by styles.css) and a Font Awesome camera icon to the right of
+ * the label text. We modify the label IN PLACE so all of this styling is
+ * preserved exactly:
+ *   - drop the `for` attribute so clicking no longer fires the hidden
+ *     #imageDownload input that drove the old single-image download path;
+ *   - update the <span class="btn-text"> text to "Download all images";
+ *   - keep the existing camera icon (or restore it defensively);
+ *   - install a click listener that calls downloadAllPanels().
+ *
+ * The hidden helper input (#imageDownload) and the helper anchor (#canvasImg)
+ * are no longer needed and are tidied up: the input is removed, the anchor
+ * stays in the DOM (drawLayout's afterDrawing handler keeps referring to it
+ * by id) but is emptied, stripped of its `download` attribute and hidden.
+ *
+ * The dataset flag prevents duplicate wiring on repeated calls.
+ */
+function repurposeImageDownloadButton() {
+    const label = document.querySelector('label[for="imageDownload"]');
+    if (!label) return;
+    if (label.dataset.repurposed === '1') return;
+
+    // Disarm the native label->input click forwarding.
+    label.removeAttribute('for');
+
+    // Update the visible text; the camera icon next to it stays in place.
+    const textSpan = label.querySelector('.btn-text');
+    if (textSpan) textSpan.textContent = 'Download all images';
+
+    // Defensive: ensure the icon is the camera one (it already is per the
+    // current HTML, but this makes the wiring resilient to small markup
+    // changes).
+    const icon = label.querySelector('i');
+    if (icon) icon.className = 'fa-solid fa-camera fa-lg';
+
+    // Now route clicks to our handler.
+    label.style.cursor = 'pointer';
+    label.addEventListener('click', (e) => {
+        e.preventDefault();
+        downloadAllPanels();
+    });
+    label.dataset.repurposed = '1';
+
+    // Tidy up the now-dead helper input that used to forward clicks to the
+    // anchor. Removing it is safe because nothing else references it.
+    const hidden = document.getElementById('imageDownload');
+    if (hidden) hidden.remove();
+
+    // Keep #canvasImg in the DOM because drawLayout's afterDrawing handler
+    // still calls document.getElementById('canvasImg').href = dataURL on each
+    // redraw; calling it on a missing element would throw. We just make sure
+    // it has no content and isn't visible.
+    const anchor = document.getElementById('canvasImg');
+    if (anchor) {
+        anchor.textContent = '';
+        anchor.removeAttribute('download');
+        anchor.style.display = 'none';
+    }
+}
+
+/**
+ * Save the canvas drawn inside a given vis-network container as a PNG file.
+ * No-op if the canvas hasn't been rendered yet (e.g. before the WASM has run
+ * for the BCT/FPQ panels). The filename is `<prefix>-<k>.png` with k = 1-based
+ * layout number (matches the "layout X of Y" display).
+ * @param {string} containerId  ID of the vis-network container element.
+ * @param {string} prefix       Filename prefix.
+ */
+function downloadPanelImage(containerId, prefix) {
+    const canvas = document.querySelector('#' + containerId + ' canvas');
+    if (!canvas) {
+        console.warn('downloadPanelImage: no canvas in #' + containerId +
+                     ' (panel not rendered yet)');
+        return;
+    }
+    const k = (typeof currentIndex === 'number' && currentIndex >= 0)
+              ? (currentIndex + 1) : 0;
+    const filename = prefix + '-' + k + '.png';
+    const dataURL = canvas.toDataURL('image/png');
+    triggerImageDownload(dataURL, filename);
+}
+
+/**
+ * Download all 3 graphic panels of the currently displayed layout as three
+ * separate PNG files. Panels that haven't been rendered yet are skipped (a
+ * warning is logged for each).
+ *
+ * Note: some browsers (notably Chrome) ask the user to allow multiple
+ * downloads from the same site the first time this happens. Accept and the
+ * three files will arrive in the usual download folder.
+ */
+function downloadAllPanels() {
+    const targets = [
+        { container: 'network',     prefix: 'layout' },
+        { container: 'bct-network', prefix: 'bct'    },
+        { container: 'fpq-network', prefix: 'fpq'    }
+    ];
+    let downloaded = 0;
+    for (const t of targets) {
+        if (document.querySelector('#' + t.container + ' canvas')) {
+            downloadPanelImage(t.container, t.prefix);
+            downloaded++;
+        } else {
+            console.warn('downloadAllPanels: skipping #' + t.container +
+                         ' (no canvas rendered)');
+        }
+    }
+    if (downloaded === 0) {
+        console.warn('downloadAllPanels: nothing to download \u2014 run an ' +
+                     'enumeration first (Compute Layouts).');
+    }
+}
+
+/**
+ * Create a hidden anchor and click it to save a data URL as a file. The
+ * anchor lives in the DOM only long enough to be activated, then is removed.
+ * @param {string} dataURL   Data URL produced by HTMLCanvasElement.toDataURL.
+ * @param {string} filename  Filename presented to the user in the save dialog.
+ */
+function triggerImageDownload(dataURL, filename) {
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+// --- Wiring ------------------------------------------------------------------
+
+document.addEventListener('DOMContentLoaded', () => {
+    ensureDownloadButtons();
+});
+// =============================================================================
+// Ranking / Unranking controls
+// =============================================================================
+//
+// The C++ enumerator (see main_enum.cpp / main()) emits every layout in a
+// fixed canonical order:
+//
+//     for each rooting rho in `rootings` (in order):
+//         for each permutation pi (lexicographic, via std::next_permutation
+//                                  on the cutpoint children in BFS order):
+//             emit layout(rho, pi)
+//
+// Therefore the position of a layout in the parallel arrays `layouts[]`,
+// `bcts[]`, `fpqs[]` IS its rank. Consequences (all O(1), pure JS, no need to
+// touch the C++):
+//   - RANK    (current layout -> integer): `currentIndex`.
+//   - UNRANK  (integer k -> layout): set `currentIndex = k` and redraw.
+//
+// The set of layouts sharing the same rooting is exactly one contiguous run in
+// the arrays. Grouping `bcts[]` by the *root block* of each entry recovers the
+// rootings: each run is one admissible root block, and its length is the number
+// of permutations of that rooting (N_rho = product of the factorials of the
+// P-node sizes). This is what feeds the segmented bar:
+//   - one segment per admissible root block,
+//   - segment width proportional to its layout count,
+//   - segment colored with the block-chromatism color (same color the block
+//     gets in the BCT and as F_BLOCK in the FPQ tree),
+//   - segment labeled "B<i>" with its inclusive rank range "<start>-<end>".
+//
+// Identifiers shown in the UI are 1-based, matching the "layout X of Y"
+// navigation bar at the bottom: the rank readout, the unrank range and the
+// segment ranges all use the same numbering as the arrows, so the numbers line
+// up exactly. Internally `currentIndex` and the group start/end stay 0-based
+// (they index the parallel arrays); the +1 is applied only at display time, and
+// the unrank input is converted back with -1. (Note: the Di Battista/Grosso/
+// Maragno/Patrignani ranking paper uses 0-based ranks; switching back is just a
+// matter of dropping the +1/-1 offsets here.)
+// =============================================================================
+
+/**
+ * Groups of consecutive layouts sharing the same rooting (admissible root
+ * block). Rebuilt lazily from `bcts[]`. Each entry:
+ *   { rootBlock:<blockIndex>, start:<firstRank>, count:<n>, end:<lastRank> }
+ * @type {Array<{rootBlock:number,start:number,count:number,end:number}>}
+ */
+var rootingGroups = [];
+
+/** `bcts.length` the groups were last built for (cache key). @type {number} */
+var rootingGroupsForLength = -1;
+
+/** `rootingGroupsForLength` the bar segments were last rendered for. */
+var rankBarBuiltForLength = -2;
+
+/**
+ * Total number of enumerated layouts currently available. After "Compute
+ * Layouts" this equals `bcts.length`; for the initial hard-coded demo (no
+ * WASM, empty `bcts`) it falls back to `numberOfLayouts`.
+ * @returns {number}
+ */
+function rankTotal() {
+    return (bcts.length > 0) ? bcts.length : numberOfLayouts;
+}
+
+/**
+ * Root block index of a given BCT entry. The BCT root TreeNode is a block node
+ * whose `value` is the biconnected-block index (same index used by
+ * `blockColor` and by the FPQ F_BLOCK nodes). Falls back to the FPQ root's
+ * `blockIndex` if, for any reason, the BCT root node is not a block.
+ * @param {{root:number,nodes:Array}} bct  BCT description.
+ * @param {number} i                       Index into the parallel arrays.
+ * @returns {number} Block index, or -1 if undeterminable.
+ */
+function rootBlockValueOf(bct, i) {
+    if (bct && bct.nodes != null && bct.root != null) {
+        for (const n of bct.nodes) {
+            if (n.id === bct.root) {
+                if (n.kind === 'block') return n.value;
+                break;
+            }
+        }
+    }
+    const fpq = fpqs[i];
+    if (fpq && fpq.nodes) {
+        for (const n of fpq.nodes) {
+            if (n.id === fpq.root && n.type === 'F_BLOCK') return n.blockIndex;
+        }
+    }
+    return -1;
+}
+
+/**
+ * (Re)build `rootingGroups` from `bcts[]` if the data changed since last time.
+ * Cheap to call on every refresh: it no-ops unless `bcts.length` changed.
+ */
+function rebuildRootingGroupsIfNeeded() {
+    if (bcts.length === rootingGroupsForLength && rootingGroups.length > 0) return;
+    rootingGroupsForLength = bcts.length;
+    rootingGroups = [];
+    for (let i = 0; i < bcts.length; i++) {
+        const rb = rootBlockValueOf(bcts[i], i);
+        const last = rootingGroups[rootingGroups.length - 1];
+        if (!last || last.rootBlock !== rb) {
+            rootingGroups.push({ rootBlock: rb, start: i, count: 1 });
+        } else {
+            last.count++;
+        }
+    }
+    for (const g of rootingGroups) g.end = g.start + g.count - 1;
+}
+
+/**
+ * Decompose a global rank into (rooting, perm).
+ * @param {number} k Global 0-based rank.
+ * @returns {?{rooting:number,perm:number,rootBlock:number,count:number}}
+ *          null if k is outside every group.
+ */
+function decomposeRank(k) {
+    for (let r = 0; r < rootingGroups.length; r++) {
+        const g = rootingGroups[r];
+        if (k >= g.start && k <= g.end) {
+            return { rooting: r, perm: k - g.start, rootBlock: g.rootBlock, count: g.count };
+        }
+    }
+    return null;
+}
+
+/**
+ * Compose a (rooting, perm) pair back into a global rank.
+ * @param {number} rooting Index into `rootingGroups`.
+ * @param {number} perm    Permutation index within that rooting.
+ * @returns {number} Global rank, or -1 if either index is out of range.
+ */
+function composeRank(rooting, perm) {
+    if (rooting < 0 || rooting >= rootingGroups.length) return -1;
+    const g = rootingGroups[rooting];
+    if (perm < 0 || perm >= g.count) return -1;
+    return g.start + perm;
+}
+
+/**
+ * Parse the unrank text field. Accepts a single global rank, e.g. "17".
+ * @param {string} text Raw input.
+ * @returns {{ok:true,k:number}|{ok:false,msg:string}}
+ */
+function parseUnrank(text) {
+    const t = String(text).trim();
+    if (t === '') return { ok: false, msg: 'Empty input' };
+    const m = t.match(/^(\d+)$/);
+    if (m) return { ok: true, k: parseInt(m[1], 10) };
+    return { ok: false, msg: 'Enter a whole number' };
+}
+
+/**
+ * Jump to the layout of a given global rank, redrawing all panels. The wrapped
+ * `updateStatistics` (see below) refreshes the ranking UI as a side effect.
+ * @param {number} k Global 0-based rank.
+ * @returns {boolean} true if the jump happened, false if k was out of range.
+ */
+function goToLayout(k) {
+    const N = rankTotal();
+    if (!(Number.isInteger(k) && k >= 0 && k < N)) return false;
+    currentIndex = k;
+    updateStatistics();
+    drawLayout(graph, layouts[currentIndex]);
+    drawBCT(bcts[currentIndex]);
+    drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
+    return true;
+}
+
+// --- UI ----------------------------------------------------------------------
+
+/**
+ * Inject styling for the Controls panel (#buttons): shrink the control buttons
+ * (.btn-left) so the whole content — including the ranking section — fits inside
+ * the fixed-height panel without overflowing. All .btn-left buttons share the
+ * rule, so they stay equal in size to one another. An id selector (#buttons ...)
+ * overrides whatever the .btn-left rules in styles.css set, so this needs no
+ * change to the stylesheet. Idempotent.
+ */
+function ensureControlsPanelStyle() {
+    if (document.getElementById('controls-style')) return;
+    const st = document.createElement('style');
+    st.id = 'controls-style';
+    st.textContent =
+        // Compact, uniformly-sized control buttons.
+        '#buttons .btn-left{padding:5px 10px;font-size:13px;line-height:1.2;' +
+        'min-height:0;height:auto;margin-bottom:6px;}' +
+        '#buttons .btn-left i{font-size:1em;}' +
+        '#buttons #fileName{margin:4px 0;font-size:12px;}';
+    (document.head || document.documentElement).appendChild(st);
+}
+
+/**
+ * Inject the ranking/unranking controls into the bottom of the Controls panel
+ * (#buttons), below the download buttons. Idempotent (same pattern as
+ * ensureBCTLegend / ensureDownloadButtons), so no changes are needed in either
+ * index.html. The segmented bar, the rank readout and the unrank input are all
+ * built here once; their dynamic content is refreshed by refreshRankUI().
+ */
+function ensureRankingControls() {
+    if (document.getElementById('ranking-controls')) return;
+    const host = document.getElementById('buttons');
+    if (!host) return;
+
+    const wrap = document.createElement('div');
+    wrap.id = 'ranking-controls';
+    wrap.style.cssText =
+        'margin-top:8px; padding-top:8px; border-top:1px solid #ddd; ' +
+        'font-family:sans-serif; color:#222;';
+
+    const title = document.createElement('div');
+    title.textContent = 'Ranking / Unranking';
+    title.style.cssText = 'font-weight:600; margin-bottom:2px;';
+    wrap.appendChild(title);
+
+    const sub = document.createElement('div');
+    sub.textContent = 'Permutation map \u2014 one segment per admissible root block';
+    sub.style.cssText = 'font-size:11px; color:#666; margin-bottom:4px;';
+    wrap.appendChild(sub);
+
+    // Segmented bar + position marker.
+    const barWrap = document.createElement('div');
+    barWrap.id = 'rank-bar-wrap';
+    barWrap.style.cssText = 'position:relative; margin:4px 0 8px;';
+
+    const bar = document.createElement('div');
+    bar.id = 'rank-bar';
+    bar.style.cssText =
+        'display:flex; height:32px; border:1px solid #bbb; ' +
+        'border-radius:4px; overflow:hidden; background:#f3f3f3;';
+    barWrap.appendChild(bar);
+
+    const marker = document.createElement('div');
+    marker.id = 'rank-marker';
+    marker.style.cssText =
+        'position:absolute; top:-4px; height:40px; width:0; ' +
+        'transform:translateX(-50%); pointer-events:none; ' +
+        'border-left:2px solid #111; display:none;';
+    const tri = document.createElement('div');
+    tri.style.cssText =
+        'position:absolute; top:-1px; left:-4px; width:0; height:0; ' +
+        'border-left:4px solid transparent; border-right:4px solid transparent; ' +
+        'border-top:6px solid #111;';
+    marker.appendChild(tri);
+    barWrap.appendChild(marker);
+
+    wrap.appendChild(barWrap);
+
+    // Rank readout + inline navigation arrows (so you can step through layouts
+    // without scrolling down to the bottom navigation bar).
+    const rankRow = document.createElement('div');
+    rankRow.style.cssText = 'margin-bottom:8px;';
+
+    const rankLbl = document.createElement('div');
+    rankLbl.textContent = 'Rank (current layout)';
+    rankLbl.style.cssText = 'font-size:13px; margin-bottom:2px;';
+
+    const navRow = document.createElement('div');
+    navRow.style.cssText =
+        'display:flex; align-items:center; justify-content:center; gap:10px; ' +
+        'background:#fafafa; border:1px solid #e0e0e0; border-radius:3px; padding:3px 6px;';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.id = 'rank-prev';
+    prevBtn.type = 'button';
+    prevBtn.title = 'Previous layout';
+    prevBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i>';
+    prevBtn.style.cssText =
+        'border:none; background:transparent; cursor:pointer; ' +
+        'font-size:15px; padding:2px 8px; color:#08175a;';
+
+    const rankVal = document.createElement('span');
+    rankVal.id = 'rank-current';
+    rankVal.innerHTML = '&mdash;';
+    rankVal.style.cssText =
+        'font-family:monospace; font-size:13px; min-width:96px; text-align:center;';
+
+    const nextBtn = document.createElement('button');
+    nextBtn.id = 'rank-next';
+    nextBtn.type = 'button';
+    nextBtn.title = 'Next layout';
+    nextBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i>';
+    nextBtn.style.cssText =
+        'border:none; background:transparent; cursor:pointer; ' +
+        'font-size:15px; padding:2px 8px; color:#08175a;';
+
+    navRow.appendChild(prevBtn);
+    navRow.appendChild(rankVal);
+    navRow.appendChild(nextBtn);
+
+    const rankDetail = document.createElement('div');
+    rankDetail.id = 'rank-detail';
+    rankDetail.style.cssText =
+        'font-size:11px; color:#666; text-align:center; min-height:14px; margin-top:3px;';
+
+    rankRow.appendChild(rankLbl);
+    rankRow.appendChild(navRow);
+    rankRow.appendChild(rankDetail);
+    wrap.appendChild(rankRow);
+
+    prevBtn.addEventListener('click', () => {
+        if (currentIndex > 0) goToLayout(currentIndex - 1);
+    });
+    nextBtn.addEventListener('click', () => {
+        if (currentIndex < rankTotal() - 1) goToLayout(currentIndex + 1);
+    });
+
+    // Unrank input.
+    const unrankRow = document.createElement('div');
+    const unrankLbl = document.createElement('label');
+    unrankLbl.setAttribute('for', 'unrank-input');
+    unrankLbl.style.cssText = 'display:block; font-size:13px; margin-bottom:2px;';
+    unrankLbl.innerHTML =
+        'Unrank <span style="color:#666;">(go to rank <span id="unrank-hint">&mdash;</span>)</span>';
+    const inputRow = document.createElement('div');
+    inputRow.style.cssText = 'display:flex; gap:6px; align-items:center;';
+    const input = document.createElement('input');
+    input.id = 'unrank-input';
+    input.type = 'text';
+    input.placeholder = 'e.g. 10';
+    input.style.cssText = 'flex:1 1 auto; min-width:0; padding:4px 6px;';
+    const goBtn = document.createElement('button');
+    goBtn.id = 'unrank-go';
+    goBtn.type = 'button';
+    goBtn.textContent = 'Go';
+    goBtn.style.cssText = 'flex:0 0 auto; padding:4px 12px; cursor:pointer;';
+    inputRow.appendChild(input);
+    inputRow.appendChild(goBtn);
+    const err = document.createElement('div');
+    err.id = 'unrank-error';
+    err.style.cssText = 'color:#b71c1c; font-size:12px; min-height:14px; margin-top:2px;';
+    unrankRow.appendChild(unrankLbl);
+    unrankRow.appendChild(inputRow);
+    unrankRow.appendChild(err);
+    wrap.appendChild(unrankRow);
+
+    host.appendChild(wrap);
+
+    // Wiring.
+    goBtn.addEventListener('click', handleUnrank);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); handleUnrank(); }
+    });
+}
+
+/**
+ * Rebuild the segments of the rank bar from `rootingGroups`. One flex child per
+ * rooting, width proportional to its layout count, filled with the block color
+ * and labeled "B<i>" plus its inclusive rank range. Clicking a segment jumps to
+ * the first layout of that rooting. When no structure is available yet (initial
+ * demo, before Compute Layouts) a single hint cell is shown instead.
+ */
+function renderRankBarSegments() {
+    const bar = document.getElementById('rank-bar');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    if (rootingGroups.length === 0) {
+        const ph = document.createElement('div');
+        ph.textContent = 'Run "Compute Layouts" to see the rooting structure';
+        ph.style.cssText =
+            'flex:1 1 auto; display:flex; align-items:center; justify-content:center; ' +
+            'font-size:11px; color:#888; padding:0 6px; text-align:center;';
+        bar.appendChild(ph);
+        return;
+    }
+
+    rootingGroups.forEach((g, idx) => {
+        const seg = document.createElement('div');
+        seg.className = 'rank-seg';
+        seg.style.cssText =
+            'flex:' + g.count + ' 1 0; min-width:0; box-sizing:border-box; ' +
+            'border-right:' + (idx < rootingGroups.length - 1 ? '1px solid rgba(0,0,0,.35)' : 'none') + '; ' +
+            'background:' + blockColor(g.rootBlock) + '; ' +
+            'display:flex; flex-direction:column; align-items:center; justify-content:center; ' +
+            'cursor:pointer; overflow:hidden; padding:2px 1px; line-height:1.15;';
+        seg.title =
+            'Rooting ' + (idx + 1) + ': initial block B' + g.rootBlock +
+            ' \u2014 ranks ' + (g.start + 1) + '\u2013' + (g.end + 1) + ' (' + g.count + ' layouts)';
+
+        const lbl = document.createElement('div');
+        lbl.textContent = 'B' + g.rootBlock;
+        lbl.style.cssText = 'font-weight:700; font-size:12px; color:#000; white-space:nowrap;';
+
+        const rng = document.createElement('div');
+        rng.textContent = (g.start + 1) + '\u2013' + (g.end + 1);
+        rng.style.cssText = 'font-size:10px; color:#000; opacity:.75; white-space:nowrap;';
+
+        seg.appendChild(lbl);
+        seg.appendChild(rng);
+        seg.addEventListener('click', () => goToLayout(g.start));
+        bar.appendChild(seg);
+    });
+}
+
+/**
+ * Move the position marker to the current layout and highlight the current
+ * segment. The marker's horizontal position is (currentIndex + 0.5) / N across
+ * the whole bar: because each segment's flex weight equals its layout count,
+ * one layout maps to one equal slice of the bar width, so this percentage lands
+ * exactly on the current layout's slot regardless of segment sizes.
+ */
+function updateRankMarker() {
+    const marker = document.getElementById('rank-marker');
+    if (!marker) return;
+    const N = rankTotal();
+    if (N <= 0 || currentIndex < 0 || rootingGroups.length === 0) {
+        marker.style.display = 'none';
+    } else {
+        marker.style.display = 'block';
+        marker.style.left = ((currentIndex + 0.5) / N * 100) + '%';
+    }
+
+    const bar = document.getElementById('rank-bar');
+    if (bar) {
+        const d = (currentIndex >= 0) ? decomposeRank(currentIndex) : null;
+        let idx = 0;
+        for (const seg of bar.children) {
+            if (seg.classList && seg.classList.contains('rank-seg')) {
+                seg.style.boxShadow = (d && d.rooting === idx) ? 'inset 0 0 0 2px #111' : 'none';
+                idx++;
+            }
+        }
+    }
+}
+
+/**
+ * Refresh all dynamic parts of the ranking UI: rebuild groups/segments if the
+ * dataset changed, update the unrank range hint, the rank readout (both the
+ * 0-based rank and the decomposed rooting/perm form plus the 1-based "layout X
+ * of Y"), and reposition the marker. Safe to call any time; no-ops if the UI
+ * has not been injected yet.
+ */
+function refreshRankUI() {
+    if (!document.getElementById('ranking-controls')) return;
+
+    rebuildRootingGroupsIfNeeded();
+    if (rankBarBuiltForLength !== rootingGroupsForLength) {
+        renderRankBarSegments();
+        rankBarBuiltForLength = rootingGroupsForLength;
+    }
+
+    const N = rankTotal();
+
+    const hint = document.getElementById('unrank-hint');
+    if (hint) hint.textContent = (N > 0) ? ('1 \u2013 ' + N) : '\u2014';
+
+    const rc = document.getElementById('rank-current');
+    const detail = document.getElementById('rank-detail');
+    if (rc) {
+        if (currentIndex < 0 || N === 0) {
+            rc.innerHTML = '&mdash;';
+            if (detail) detail.textContent = '';
+        } else {
+            // Display is 1-based to match the "layout X of Y" navigation bar.
+            rc.textContent = 'rank ' + (currentIndex + 1) + ' of ' + N;
+            const d = decomposeRank(currentIndex);
+            if (detail) {
+                detail.textContent = d
+                    ? ('initial block B' + d.rootBlock +
+                       ' \u00b7 perm ' + (d.perm + 1) + ' of ' + d.count)
+                    : '';
+            }
+        }
+    }
+
+    // Enable/disable the inline navigation arrows at the ends.
+    const prevBtn = document.getElementById('rank-prev');
+    const nextBtn = document.getElementById('rank-next');
+    const atStart = !(currentIndex > 0);
+    const atEnd = !(currentIndex >= 0 && currentIndex < N - 1);
+    if (prevBtn) {
+        prevBtn.disabled = atStart;
+        prevBtn.style.opacity = atStart ? '0.35' : '1';
+        prevBtn.style.cursor = atStart ? 'default' : 'pointer';
+    }
+    if (nextBtn) {
+        nextBtn.disabled = atEnd;
+        nextBtn.style.opacity = atEnd ? '0.35' : '1';
+        nextBtn.style.cursor = atEnd ? 'default' : 'pointer';
+    }
+
+    updateRankMarker();
+}
+
+/**
+ * Handle a click on "Go" (or Enter in the input): parse the field, validate the
+ * resulting rank against the available range, and jump. Errors are shown inline
+ * in #unrank-error.
+ */
+function handleUnrank() {
+    const input = document.getElementById('unrank-input');
+    const err = document.getElementById('unrank-error');
+    if (!input) return;
+    const res = parseUnrank(input.value);
+    if (!res.ok) { if (err) err.textContent = res.msg; return; }
+    const N = rankTotal();
+    // Input is 1-based (matches the navigation bar); convert to a 0-based index.
+    const idx = res.k - 1;
+    if (!(idx >= 0 && idx < N)) {
+        if (err) err.textContent = 'Out of range (1\u2013' + N + ')';
+        return;
+    }
+    if (err) err.textContent = '';
+    goToLayout(idx);
+}
+
+// --- Hook into updateStatistics so the UI refreshes on Run / Next / Prev -----
+// updateStatistics() is already called from every navigation path, so wrapping
+// it keeps the ranking UI in sync without touching those listeners. The guard
+// makes the wrap idempotent (defensive against the patcher double-append issue
+// documented in HANDOVER_3).
+if (typeof updateStatistics === 'function' && !updateStatistics.__rankWrapped) {
+    const _baseUpdateStatistics = updateStatistics;
+    updateStatistics = function () {
+        _baseUpdateStatistics.apply(this, arguments);
+        try { refreshRankUI(); } catch (e) { /* UI not built yet; ignore */ }
+    };
+    updateStatistics.__rankWrapped = true;
+}
+
+// =============================================================================
+// FPQ panel auto-sizing
+// =============================================================================
+//
+// The 2x2 grid (#grid in styles.css) uses fixed 420px rows, and .panel has
+// overflow:hidden, so a tall FPQ tree would be squashed/zoomed to fit inside
+// the fixed cell. To let big trees breathe, we:
+//   1. let the bottom grid row grow (grid-template-rows: 420px minmax(420px,
+//      auto)) via an injected stylesheet (an id selector overrides styles.css,
+//      and the responsive media query is replicated so single-column layout
+//      still works);
+//   2. set an explicit min-height on the FPQ panel proportional to the tree
+//      depth (drawFPQ), clamped between the standard height and a cap;
+//   3. refit both bottom networks whenever their panel is resized, via a
+//      ResizeObserver, so the BCT panel (which shares the row and therefore the
+//      new height) stays visually aligned and both trees re-center smoothly.
+// =============================================================================
+
+/**
+ * Inject the stylesheet that lets the bottom grid row grow with its content.
+ * Idempotent. An id selector overrides the fixed rows declared in styles.css;
+ * the max-width:900px media query is replicated so the single-column responsive
+ * layout keeps working (with the FPQ row, the 4th one, allowed to grow).
+ */
+function ensureFPQResizeStyle() {
+    if (document.getElementById('fpq-resize-style')) return;
+    const st = document.createElement('style');
+    st.id = 'fpq-resize-style';
+    st.textContent =
+        '#grid{grid-template-rows:420px minmax(420px,auto);}' +
+        '@media (max-width:900px){#grid{' +
+        'grid-template-rows:auto 380px 380px minmax(380px,auto);}}';
+    (document.head || document.documentElement).appendChild(st);
+}
+
+/**
+ * Set the min-height of the FPQ panel (the .panel wrapping #fpq-network). With
+ * the growable bottom row this drives how tall the panel — and the shared row —
+ * becomes. A CSS transition makes the change smooth; the ResizeObserver refits
+ * the networks live during the animation.
+ * @param {number} px Target panel min-height in pixels.
+ */
+function setFPQPanelHeight(px) {
+    const c = document.getElementById('fpq-network');
+    if (!c || !c.parentElement) return;
+    const panel = c.parentElement;
+    if (panel.style.transition.indexOf('min-height') === -1) {
+        panel.style.transition = 'min-height 0.25s ease';
+    }
+    panel.style.minHeight = px + 'px';
+}
+
+/**
+ * Resize a vis Network's canvas to fill its (possibly resized) container and
+ * re-fit the graph into view. No-op if the network is null or the call throws.
+ * @param {?object} net A vis.Network instance.
+ */
+function refitNetwork(net) {
+    if (!net) return;
+    try {
+        net.setSize('100%', '100%');
+        net.redraw();
+        net.fit();
+    } catch (e) { /* network destroyed / not ready; ignore */ }
+}
+
+/**
+ * Observe a network panel (.net container) and refit its current network
+ * whenever the container is resized (e.g. when the FPQ panel grows and the
+ * shared bottom row changes height). Set up at most once per container; the
+ * observer reads the current global network instance each time, so it keeps
+ * working across redraws. Falls back to a no-op if ResizeObserver is missing.
+ * @param {string} containerId 'bct-network' or 'fpq-network'.
+ */
+function observeNetPanel(containerId) {
+    observeNetPanel._seen = observeNetPanel._seen || {};
+    if (observeNetPanel._seen[containerId]) return;
+    if (typeof ResizeObserver === 'undefined') { observeNetPanel._seen[containerId] = true; return; }
+    const c = document.getElementById(containerId);
+    if (!c) return;
+    const ro = new ResizeObserver(() => {
+        const net = (containerId === 'fpq-network') ? fpqNetwork
+                  : (containerId === 'bct-network') ? bctNetwork : null;
+        refitNetwork(net);
+    });
+    ro.observe(c);
+    observeNetPanel._seen[containerId] = true;
+}
+
+// --- Wiring ------------------------------------------------------------------
+
+(function () {
+    function init() {
+        ensureControlsPanelStyle();
+        ensureFPQResizeStyle();
+        ensureRankingControls();
+        refreshRankUI();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
