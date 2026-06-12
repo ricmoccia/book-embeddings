@@ -1983,7 +1983,7 @@ function applyGridSizing() {
         const footerH = footer ? footer.offsetHeight : 0;
         const margin = 8, gap = 10;
         const gridH = Math.max(520, window.innerHeight - gridTop - footerH - margin);
-        const controlsH = 210;                       // riga piccola del Controls (tune)
+        const controlsH = 300;                       // riga piccola del Controls (tune)
         const bottomH = gridH - controlsH - gap;
         grid.style.gridTemplateRows = controlsH + 'px ' + bottomH + 'px';
     }
@@ -2048,10 +2048,10 @@ function applyGridSizing() {
         const st = document.createElement('style');
         st.id = 'chrome-compact-style';
         st.textContent =
-            'nav{padding:0 16px;}' +
-            'nav h1{font-size:1.15rem; padding:0;}' +
-            'nav ul li{padding:8px 14px;}' +
-            'nav .site-brand img{height:34px !important;}' +
+            'nav{padding:0 18px;}' +
+            'nav h1{font-size:1.3rem; padding:0;}' +
+            'nav ul li{padding:9px 16px;}' +
+            'nav .site-brand img{height:40px !important;}' +
             '#footer{padding:1.2em 0;}';
         (document.head || document.documentElement).appendChild(st);
     }
@@ -2095,8 +2095,8 @@ function fitControlsContent() {
         const st = document.createElement('style');
         st.id = 'controls-fit2-style';
         st.textContent =
-            '#buttons{overflow:hidden;}' +                                  // no scrollbar
-            '#buttons .btn-left{padding:4px 9px; font-size:12px; margin-bottom:5px;}' +
+            '#buttons{overflow:hidden;}' +
+            '#buttons .btn-left{padding:6px 10px; font-size:13px; margin-bottom:6px;}' +
             '#ranking-controls{margin-top:8px; padding-top:8px;}';
         (document.head || document.documentElement).appendChild(st);
     }
