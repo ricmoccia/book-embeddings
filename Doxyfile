@@ -1,0 +1,33 @@
+# --- Project -----------------------------------------------------------------
+PROJECT_NAME        = "Book Embeddings Visualizer"
+PROJECT_BRIEF       = "Enumeration, representation and ranking of one-page book embeddings"
+PROJECT_LOGO        = web-system/images/logo.svg
+OUTPUT_DIRECTORY    = docs
+
+# --- Input -------------------------------------------------------------------
+# Solo il sorgente: il C++ in code/ e il SORGENTE JS (non binary.js, che e' il
+# compilato/patchato e sporcherebbe la doc).
+INPUT               = code web-system/assets/js/code_to_append.js
+EXCLUDE             = code/build
+FILE_PATTERNS       = *.cpp *.h *.hpp *.js
+EXTENSION_MAPPING   = js=JavaScript
+RECURSIVE           = YES
+
+# --- What to extract ---------------------------------------------------------
+EXTRACT_ALL         = YES
+EXTRACT_PRIVATE     = YES
+EXTRACT_STATIC      = YES
+JAVADOC_AUTOBRIEF   = YES
+WARN_IF_UNDOCUMENTED = NO
+QUIET               = YES
+
+# --- Output (text only, no diagrams) -----------------------------------------
+GENERATE_HTML       = YES
+GENERATE_LATEX      = NO
+SOURCE_BROWSER      = YES
+HAVE_DOT            = NO
+CLASS_GRAPH         = NO
+COLLABORATION_GRAPH = NO
+CALL_GRAPH          = NO
+CALLER_GRAPH        = NOUSE_MATHJAX = YES
+WARN_IF_DOC_ERROR = NO

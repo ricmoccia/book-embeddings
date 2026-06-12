@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">
+  <!-- 1-stack book embedding logo: three vertices on a spine,
+       three arcs colored after the block-chromatism palette
+       used in the visualizer. -->
+  <path d="M 16 44 A 17 17 0 0 1 50 44" stroke="#e85d5d" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <path d="M 50 44 A 17 17 0 0 1 84 44" stroke="#f0a040" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <path d="M 16 44 A 34 34 0 0 1 84 44" stroke="#1f7a8c" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <circle cx="16" cy="44" r="6" fill="#1f2937"/>
+  <circle cx="50" cy="44" r="6" fill="#1f2937"/>
+  <circle cx="84" cy="44" r="6" fill="#1f2937"/>
+</svg>

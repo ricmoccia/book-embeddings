@@ -536,13 +536,12 @@ function drawLayout(graph, layout) {
     const mapping = new Map();
 
     let i = 0;
-    layout.forEach(label => {
-        mapping.set(label, i);
-        i += 1;
-    });
+    layout.forEach(label => { mapping.set(label, i); i += 1; });
 
+    // VERTICAL spine: nodes stacked top-to-bottom (x = 0); arcs bow to the RIGHT.
+    const V = 75;
     graph.nodes.forEach(node => {
-        nodes.add({ id: mapping.get(node.label), label: node.label, x: mapping.get(node.label) * 75, y: 0 });
+        nodes.add({ id: mapping.get(node.label), label: node.label, x: 0, y: mapping.get(node.label) * V });
     });
 
     graph.edges.forEach(edge => {
@@ -556,19 +555,35 @@ function drawLayout(graph, layout) {
         });
     });
 
+    // Reserve room on the RIGHT so the arcs are not clipped; the spine then sits
+    // on the left of the panel. HEAD ~ the widest arc's rightward extent.
+    let maxSpan = 0;
+    graph.edges.forEach(edge => {
+        const a = mapping.get(edge.from), bb = mapping.get(edge.to);
+        if (a != null && bb != null) maxSpan = Math.max(maxSpan, Math.abs(a - bb));
+    });
+    const HEAD = maxSpan * V * 0.55;   // tune if arcs clip / too much room
+    if (HEAD > 0) {
+        const midY = (i - 1) * V / 2;
+        const invisible = {
+            size: 0, shape: 'dot', label: '',
+            color: { background: 'rgba(0,0,0,0)', border: 'rgba(0,0,0,0)' },
+            physics: false, fixed: { x: true, y: true }
+        };
+        nodes.add(Object.assign({ id: '__padRight', x: HEAD,         y: midY }, invisible));
+        nodes.add(Object.assign({ id: '__padLeft',  x: -HEAD * 0.10, y: midY }, invisible));
+    }
+
     const options = {
         nodes: {
-            color: {
-                background: "#76e0f5",
-                border: "black",
-                highlight: { background: "#bbffff", border: "black" }
-            },
+            color: { background: "#76e0f5", border: "black",
+                     highlight: { background: "#bbffff", border: "black" } },
             font: { color: "black", size: 16 },
             borderWidth: 1
         },
         edges: {
             arrows: { to: true },
-            smooth: { type: 'curvedCW' }
+            smooth: { type: 'curvedCW' }   // se gli archi vanno a SINISTRA, usa 'curvedCCW'
         },
         interaction: { dragNodes: false },
         physics: { enabled: false }
@@ -578,9 +593,9 @@ function drawLayout(graph, layout) {
     const data = { nodes: nodes, edges: edges };
     const network = new vis.Network(container, data, options);
     network.setSize(container.offsetWidth, container.offsetHeight);
-
+    network.once("afterDrawing", () => network.fit());
     network.on("doubleClick", () => network.fit());
-    network.on("afterDrawing", function(ctx) {
+    network.on("afterDrawing", function (ctx) {
         const dataURL = ctx.canvas.toDataURL();
         document.getElementById('canvasImg').href = dataURL;
     });
@@ -839,7 +854,7 @@ function drawFPQ(fpq, bct) {
             container.innerHTML =
                 '<div class="placeholder">Upload Graph File and press Compute Layouts to visualize the FPQ tree for the current layout.</div>';
         }
-        setFPQPanelHeight(420); // back to the standard panel height.
+        setFPQPanelHeight(300); // back to the standard panel height.
         fpqNetwork = null;
         return;
     }
@@ -912,7 +927,7 @@ function drawFPQ(fpq, bct) {
     // aligned); very wide trees are handled by network.fit() + pan/zoom.
     let maxLevel = 0;
     for (const p of positions.values()) if (p.level > maxLevel) maxLevel = p.level;
-    const STD_H = 420, MAX_H = 840, CHROME = 64;
+    const STD_H = 300, MAX_H = 840, CHROME = 64;
     let targetH = (maxLevel + 2) * Y_UNIT + CHROME;
     targetH = Math.max(STD_H, Math.min(MAX_H, targetH));
     setFPQPanelHeight(targetH);
@@ -1823,4 +1838,315 @@ function observeNetPanel(containerId) {
     } else {
         init();
     }
+})();
+
+// =============================================================================
+// Auto-compute on upload
+// =============================================================================
+// Drop the separate "Compute Layouts" step: hide the #run button and run the
+// computation as soon as a graph file is chosen, by programmatically clicking
+// the (now hidden) #run button, which already holds the full compute + redraw
+// logic. JS-only; index.html is left untouched.
+// =============================================================================
+(function () {
+    function hideRunButton() {
+        if (document.getElementById('auto-run-style')) return;
+        const st = document.createElement('style');
+        st.id = 'auto-run-style';
+        // !important beats the inline display:block the change-listener sets.
+        st.textContent = '#run{display:none !important;}';
+        (document.head || document.documentElement).appendChild(st);
+    }
+    function init() {
+        hideRunButton();
+        const fileInput = document.getElementById('fileInput');
+        const run = document.getElementById('run');
+        if (!fileInput || !run) return;
+        fileInput.addEventListener('change', function () {
+            // Defer so the pre-existing change-listener (#fileName) runs first.
+            setTimeout(function () { run.click(); }, 0);
+        });
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+// =============================================================================
+// Task 3: show the failure reason in the 1-stack layout panel
+// =============================================================================
+// When the DAG admits no 1-stack layout the C++ explains why on stdout (it is
+// otherwise only logged). We capture that reason and render it inside #network
+// (top-right) instead of leaving the panel blank.
+// =============================================================================
+
+var lastLayoutError = null;
+
+/** Map a raw C++ stdout line to a friendly reason, or null if not a known one. */
+function matchLayoutError(msg) {
+    if (msg.indexOf('not outerplanar') !== -1)
+        return 'The graph is not outerplanar, so it admits no 1-page book embedding.';
+    if (msg.indexOf('exactly one source and one sink') !== -1)
+        return 'A biconnected component does not have exactly one source and one sink.';
+    if (msg.indexOf('Hamiltonian path') !== -1)
+        return 'A biconnected component has no Hamiltonian path on its outer face.';
+    if (msg.indexOf('no admissible root') !== -1)
+        return 'No admissible root block exists for this DAG.';
+    return null;
+}
+
+/** Render an error message inside the #network (1-stack layout) panel. */
+function showLayoutErrorOverlay(container, text) {
+    container.innerHTML =
+        '<div class="placeholder" style="color:#b71c1c; font-weight:600; ' +
+        'padding:0 16px; text-align:center; line-height:1.4;">' +
+        'No layout could be built.<br>' +
+        '<span style="font-weight:400; color:#444;">' + text + '</span></div>';
+}
+
+// Capture the reason as the WASM emits it (reset at the start of each run).
+if (typeof getDataFromWasm === 'function' && !getDataFromWasm.__errWrapped) {
+    const _baseGetData = getDataFromWasm;
+    getDataFromWasm = function (message) {
+        try {
+            if (typeof message === 'string') {
+                if (message.indexOf('---- PHASE 1 BEGIN ----') !== -1) lastLayoutError = null;
+                const er = matchLayoutError(message);
+                if (er) lastLayoutError = er;
+            }
+        } catch (e) { /* ignore */ }
+        return _baseGetData.apply(this, arguments);
+    };
+    getDataFromWasm.__errWrapped = true;
+}
+
+// When an empty layout is drawn, show the captured reason (or a generic one).
+if (typeof drawLayout === 'function' && !drawLayout.__errWrapped) {
+    const _baseDrawLayoutErr = drawLayout;
+    drawLayout = function (g, l) {
+        _baseDrawLayoutErr.apply(this, arguments);
+        const container = document.getElementById('network');
+        if (container && (!l || l.length === 0)) {
+            showLayoutErrorOverlay(container,
+                lastLayoutError || 'The DAG admits no valid 1-stack layout.');
+        }
+    };
+    drawLayout.__errWrapped = true;
+}
+
+// =============================================================================
+// Task 4: better use of screen space
+// =============================================================================
+//   1. Adaptive columns: the left column (Controls + BCT) is kept narrower
+//      than the right (1-stack layout + FPQ, which benefit from width); the
+//      right side widens further as the graph grows.
+//   2. The grid fills the viewport: the TOP row grows to absorb the wasted
+//      space; the bottom row stays minmax(420px, auto) so the FPQ auto-sizing
+//      keeps working untouched.
+// Below 900px the responsive single-column rules take over (inline cleared).
+// =============================================================================
+
+var _gridSizingNodes = -2;
+
+function ensureGridGapStyle() {
+    if (document.getElementById('grid-gap-style')) return;
+    const st = document.createElement('style');
+    st.id = 'grid-gap-style';
+    st.textContent = '#grid{gap:10px;}';
+    (document.head || document.documentElement).appendChild(st);
+}
+
+/** Column template for a node count: left 0.40 (small) -> 0.30 (large). */
+function adaptiveColumns(nodeCount) {
+    const n = Math.max(1, nodeCount | 0);
+    let leftFrac = 0.30 - (n - 8) * 0.006;
+    leftFrac = Math.max(0.24, Math.min(0.30, leftFrac));
+    return (leftFrac * 100).toFixed(1) + '% ' + ((1 - leftFrac) * 100).toFixed(1) + '%';
+}
+
+/** Apply adaptive columns + viewport-filling rows (inline beats the stylesheet). */
+function applyGridSizing() {
+    const grid = document.getElementById('grid');
+    if (!grid) return;
+
+    if (window.innerWidth <= 900) {
+        grid.style.gridTemplateColumns = '';
+        grid.style.gridTemplateRows = '';
+    } else {
+        // col1 (Controls + BCT) stretta; col2 (FPQ) e col3 (layout) larghe.
+        grid.style.gridTemplateColumns = 'minmax(220px, 0.85fr) 1.4fr 1.4fr';
+
+        const gridTop = grid.getBoundingClientRect().top;
+        const footer = document.getElementById('footer');
+        const footerH = footer ? footer.offsetHeight : 0;
+        const margin = 8, gap = 10;
+        const gridH = Math.max(520, window.innerHeight - gridTop - footerH - margin);
+        const controlsH = 210;                       // riga piccola del Controls (tune)
+        const bottomH = gridH - controlsH - gap;
+        grid.style.gridTemplateRows = controlsH + 'px ' + bottomH + 'px';
+    }
+
+    fitControlsContent();
+    try { refitNetwork(typeof bctNetwork !== 'undefined' ? bctNetwork : null); } catch (e) {}
+    try { refitNetwork(typeof fpqNetwork !== 'undefined' ? fpqNetwork : null); } catch (e) {}
+}
+
+(function () {
+    let t = null;
+    function onResize() { clearTimeout(t); t = setTimeout(applyGridSizing, 120); }
+    function init() {
+        ensureGridGapStyle();
+        applyGridSizing();
+        window.addEventListener('resize', onResize);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+
+    // Re-apply columns when the current graph's node count changes.
+    if (typeof drawLayout === 'function' && !drawLayout.__gridWrapped) {
+        const _baseDrawLayoutGrid = drawLayout;
+        drawLayout = function (g, l) {
+            _baseDrawLayoutGrid.apply(this, arguments);
+            const n = (g && g.nodes) ? g.nodes.length : -1;
+            if (n !== _gridSizingNodes && window.innerWidth > 900) applyGridSizing();
+        };
+        drawLayout.__gridWrapped = true;
+    }
+})();
+
+// =============================================================================
+// Layout polish: full-width grid + Controls panel that never clips (issues 1 & 3)
+// =============================================================================
+(function () {
+    function ensureLayoutPolishStyle() {
+        if (document.getElementById('layout-polish-style')) return;
+        const st = document.createElement('style');
+        st.id = 'layout-polish-style';
+        st.textContent =
+            '#container{padding:16px 20px;}' +
+            '#grid{max-width:none;}' +
+            '#buttons{overflow-y:auto; overflow-x:hidden; justify-content:flex-start;}' +
+            '#buttons-up, #buttons-down{flex-wrap:nowrap;}' +
+            '#ranking-controls, #ranking-controls *{box-sizing:border-box;}' +
+            '#ranking-controls input{max-width:100%;}';
+        (document.head || document.documentElement).appendChild(st);
+        if (typeof applyGridSizing === 'function') setTimeout(applyGridSizing, 0);
+    }
+    if (document.readyState === 'loading')
+        document.addEventListener('DOMContentLoaded', ensureLayoutPolishStyle);
+    else ensureLayoutPolishStyle();
+})();
+
+// =============================================================================
+// Compact chrome: smaller top nav bar + slimmer footer (less scrolling).
+// =============================================================================
+(function () {
+    function ensureChromeCompactStyle() {
+        if (document.getElementById('chrome-compact-style')) return;
+        const st = document.createElement('style');
+        st.id = 'chrome-compact-style';
+        st.textContent =
+            'nav{padding:0 16px;}' +
+            'nav h1{font-size:1.15rem; padding:0;}' +
+            'nav ul li{padding:8px 14px;}' +
+            'nav .site-brand img{height:34px !important;}' +
+            '#footer{padding:1.2em 0;}';
+        (document.head || document.documentElement).appendChild(st);
+    }
+    if (document.readyState === 'loading')
+        document.addEventListener('DOMContentLoaded', ensureChromeCompactStyle);
+    else ensureChromeCompactStyle();
+})();
+
+// =============================================================================
+// Controls panel: content scales to fit its box (no inner scrollbar).
+// =============================================================================
+function fitControlsContent() {
+    try {
+        const panel = document.getElementById('buttons');
+        if (!panel) return;
+        const title = panel.querySelector('.panel-title');
+        let inner = panel.querySelector('#controls-inner');
+        if (!inner) {
+            inner = document.createElement('div');
+            inner.id = 'controls-inner';
+            inner.style.transformOrigin = 'top center';
+            inner.style.width = '100%';
+            panel.appendChild(inner);
+        }
+        // Pull every content child (not the title, not the wrapper) into inner.
+        Array.from(panel.children).forEach(ch => {
+            if (ch === title || ch === inner) return;
+            inner.appendChild(ch);
+        });
+        inner.style.transform = 'scale(1)';
+        const avail = panel.clientHeight - (title ? title.offsetHeight : 0) - 24;
+        const need = inner.scrollHeight;
+        const k = (need > avail && need > 0) ? Math.max(0.6, avail / need) : 1;
+        inner.style.transform = 'scale(' + k + ')';
+    } catch (e) { /* ignore */ }
+}
+
+(function () {
+    function ensureControlsFitStyle() {
+        if (document.getElementById('controls-fit2-style')) return;
+        const st = document.createElement('style');
+        st.id = 'controls-fit2-style';
+        st.textContent =
+            '#buttons{overflow:hidden;}' +                                  // no scrollbar
+            '#buttons .btn-left{padding:4px 9px; font-size:12px; margin-bottom:5px;}' +
+            '#ranking-controls{margin-top:8px; padding-top:8px;}';
+        (document.head || document.documentElement).appendChild(st);
+    }
+
+    // Keep the FPQ panel from growing past its (now fixed) grid cell.
+    if (typeof setFPQPanelHeight === 'function' && !setFPQPanelHeight.__neutralized) {
+        setFPQPanelHeight = function () {
+            const c = document.getElementById('fpq-network');
+            if (c && c.parentElement) c.parentElement.style.minHeight = '0px';
+        };
+        setFPQPanelHeight.__neutralized = true;
+    }
+
+    // Re-fit the controls after the rank/segment content changes.
+    if (typeof updateStatistics === 'function' && !updateStatistics.__fitWrapped) {
+        const _b = updateStatistics;
+        updateStatistics = function () { _b.apply(this, arguments); requestAnimationFrame(fitControlsContent); };
+        updateStatistics.__fitWrapped = true;
+    }
+
+    function init() {
+        ensureControlsFitStyle();
+        requestAnimationFrame(fitControlsContent);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+    window.addEventListener('resize', function () { requestAnimationFrame(fitControlsContent); });
+})();
+
+// =============================================================================
+// Three-section layout: [Controls / BCT] | [FPQ] | [vertical 1-stack layout]
+// Panels are reordered purely via CSS grid placement (DOM untouched).
+// =============================================================================
+function ensureThreeSectionStyle() {
+    if (document.getElementById('three-section-style')) return;
+    const st = document.createElement('style');
+    st.id = 'three-section-style';
+    st.textContent =
+        '#grid > .panel:nth-child(1){grid-column:1;grid-row:1;}' +            // Controls  (top-left)
+        '#grid > .panel:nth-child(3){grid-column:1;grid-row:2;}' +            // BCT       (bottom-left)
+        '#grid > .panel:nth-child(4){grid-column:2;grid-row:1 / span 2;}' +  // FPQ       (middle, full height)
+        '#grid > .panel:nth-child(2){grid-column:3;grid-row:1 / span 2;}' +  // 1-Stack   (right, full height)
+        '@media (max-width:900px){#grid > .panel{grid-column:auto !important;grid-row:auto !important;}}';
+    (document.head || document.documentElement).appendChild(st);
+}
+(function () {
+    function init() {
+        ensureThreeSectionStyle();
+        if (typeof applyGridSizing === 'function') applyGridSizing();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 })();

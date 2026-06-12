@@ -277,27 +277,42 @@ public:
 					std::vector<TreeNode*> children = u->getChildren(treeId, childType);
 
 					if (children.size() > 1) {
-						for (int indexOfChild: permutations[u->value][childType]) {
-							queue.push(children[indexOfChild]);
-						}
-						if (toPermute) {
-							if (std::next_permutation(permutations[u->value][childType].begin(), permutations[u->value][childType].end())) {
-								toPermute = false;
-							}
-							else {
-								// Wrapped around to the first permutation; carry to the next cutpoint.
-								std::vector<int> firstPermutation;
-								for (int i = 0; i < (int)permutations[u->value][childType].size(); i++) {
-									firstPermutation.push_back(i);
+							// mergeLayouts() splices each SOURCE (type-0) child block immediately
+							// after the cutpoint, which reverses the processing order in the
+							// spine. Enqueue source children in REVERSE permutation order so the
+							// resulting spine reads left-to-right in lexicographic order, matching
+							// the BCT and FPQ panels. Sink (type-2) children keep their order.
+							if (childType == 0) {
+								for (auto rit = permutations[u->value][childType].rbegin();
+									rit != permutations[u->value][childType].rend(); ++rit) {
+									queue.push(children[*rit]);
 								}
-								permutations[u->value][childType] = firstPermutation;
+							} else {
+								for (int indexOfChild: permutations[u->value][childType]) {
+									queue.push(children[indexOfChild]);
+								}
+							}
+
+							// Advance the odometer: move this cutpoint's permutation to the
+							// next one; on wrap-around reset it and carry to the next cutpoint.
+							// (This is what enumerates ALL layouts of a rooting, not just the first.)
+							if (toPermute) {
+								if (std::next_permutation(permutations[u->value][childType].begin(), permutations[u->value][childType].end())) {
+									toPermute = false;
+								}
+								else {
+									std::vector<int> firstPermutation;
+									for (int i = 0; i < (int)permutations[u->value][childType].size(); i++) {
+										firstPermutation.push_back(i);
+									}
+									permutations[u->value][childType] = firstPermutation;
+								}
+							}
+						} else {
+							for (TreeNode* child: children) {
+								queue.push(child);
 							}
 						}
-					} else {
-						for (TreeNode* child: children) {
-							queue.push(child);
-						}
-					}
 				}
             }
             else {
