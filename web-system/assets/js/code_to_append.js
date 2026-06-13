@@ -2150,3 +2150,5 @@ function ensureThreeSectionStyle() {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
     else init();
 })();
+
+console.log("FRONTEND BUILD: 2026-06-13-1");
