@@ -1976,14 +1976,14 @@ function applyGridSizing() {
         grid.style.gridTemplateRows = '';
     } else {
         // col1 (Controls + BCT) stretta; col2 (FPQ) e col3 (layout) larghe.
-        grid.style.gridTemplateColumns = 'minmax(220px, 0.85fr) 1.4fr 1.4fr';
+        grid.style.gridTemplateColumns = 'minmax(260px, 360px) 1.4fr 1.4fr';
 
         const gridTop = grid.getBoundingClientRect().top;
         const footer = document.getElementById('footer');
         const footerH = footer ? footer.offsetHeight : 0;
         const margin = 8, gap = 10;
         const gridH = Math.max(520, window.innerHeight - gridTop - footerH - margin);
-        const controlsH = 300;                       // riga piccola del Controls (tune)
+        const controlsH = 430;                       // riga piccola del Controls (tune)
         const bottomH = gridH - controlsH - gap;
         grid.style.gridTemplateRows = controlsH + 'px ' + bottomH + 'px';
     }
@@ -2047,11 +2047,11 @@ function applyGridSizing() {
         if (document.getElementById('chrome-compact-style')) return;
         const st = document.createElement('style');
         st.id = 'chrome-compact-style';
-        st.textContent =
-            'nav{padding:0 18px;}' +
-            'nav h1{font-size:1.3rem; padding:0;}' +
-            'nav ul li{padding:9px 16px;}' +
-            'nav .site-brand img{height:40px !important;}' +
+         st.textContent =
+            'nav{padding:0 22px;}' +
+            'nav h1{font-size:1.55rem; padding:0;}' +
+            'nav ul li{padding:11px 18px;}' +
+            'nav .site-brand img{height:48px !important;}' +
             '#footer{padding:1.2em 0;}';
         (document.head || document.documentElement).appendChild(st);
     }
@@ -2096,7 +2096,7 @@ function fitControlsContent() {
         st.id = 'controls-fit2-style';
         st.textContent =
             '#buttons{overflow:hidden;}' +
-            '#buttons .btn-left{padding:6px 10px; font-size:13px; margin-bottom:6px;}' +
+            '#buttons .btn-left{padding:8px 12px; font-size:15px; margin-bottom:7px;}' +
             '#ranking-controls{margin-top:8px; padding-top:8px;}';
         (document.head || document.documentElement).appendChild(st);
     }
