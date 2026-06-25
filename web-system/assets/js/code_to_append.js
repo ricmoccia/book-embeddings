@@ -541,7 +541,7 @@ function drawLayout(graph, layout) {
     // VERTICAL spine: nodes stacked top-to-bottom (x = 0); arcs bow to the RIGHT.
     const V = 75;
     graph.nodes.forEach(node => {
-        nodes.add({ id: mapping.get(node.label), label: node.label, x: 0, y: mapping.get(node.label) * V });
+        nodes.add({ id: mapping.get(node.label), label: node.label, x: 0, y: -mapping.get(node.label) * V });
     });
 
     graph.edges.forEach(edge => {
@@ -564,7 +564,7 @@ function drawLayout(graph, layout) {
     });
     const HEAD = maxSpan * V * 0.55;   // tune if arcs clip / too much room
     if (HEAD > 0) {
-        const midY = (i - 1) * V / 2;
+        const midY = -(i - 1) * V / 2;
         const invisible = {
             size: 0, shape: 'dot', label: '',
             color: { background: 'rgba(0,0,0,0)', border: 'rgba(0,0,0,0)' },
