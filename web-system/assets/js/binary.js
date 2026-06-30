@@ -2194,9 +2194,24 @@ console.log("FRONTEND BUILD: 2026-06-13-1");
      * "Compute Layouts" click handler but sourcing the graph from a string
      * instead of #fileInput. Repopulates layouts[]/bcts[]/fpqs[]/blocks[] and
      * redraws all panels.
+     *
+     * Returns whether the WASM runtime actually executed. We can't reliably
+     * detect "runtime ready" from a flag across Emscripten builds / reload
+     * modes, so instead we probe the *result*: a sentinel on numberOfLayouts is
+     * set before calling main and only the C++ output parser clears it. If it is
+     * still the sentinel afterwards (or callMain threw because the runtime was
+     * not up yet), the run did not happen and the caller should retry.
      * @param {string} fileString  Graph in the nodes-then-edges text format.
+     * @returns {boolean} true if the pipeline ran (feasible or not), else false.
      */
     function computeFromString(fileString) {
+        const wasmCallMain =
+            (typeof Module !== 'undefined' && Module.callMain) ||
+            (typeof callMain === 'function' ? callMain : null);
+        if (typeof wasmCallMain !== 'function') {
+            return false; // runtime glue not attached yet; caller will retry
+        }
+
         graph = getGraphFromFileString(fileString);
         layouts = [];
         bcts = [];
@@ -2208,15 +2223,16 @@ console.log("FRONTEND BUILD: 2026-06-13-1");
         currentBlocks = null;
         currentIndex = 0;
 
-        const wasmCallMain =
-            (typeof Module !== 'undefined' && Module.callMain) ||
-            (typeof callMain === 'function' ? callMain : null);
-        if (typeof wasmCallMain !== 'function') {
-            console.error('Startup example: callMain not available yet; ' +
-                'example not loaded.');
-            return;
+        const SENTINEL = -999;
+        numberOfLayouts = SENTINEL; // only the C++ output parser overwrites this
+        try {
+            wasmCallMain([fileString]);
+        } catch (e) {
+            return false; // runtime not initialized yet; caller will retry
         }
-        wasmCallMain([fileString]);
+        if (numberOfLayouts === SENTINEL) {
+            return false; // main() did not actually run; caller will retry
+        }
 
         if (numberOfLayouts == 0) {
             currentIndex = -1;
@@ -2230,60 +2246,38 @@ console.log("FRONTEND BUILD: 2026-06-13-1");
             drawBCT(bcts[currentIndex]);
             drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
         }
+        return true;
     }
 
     var hasRun = false;
 
-    /** Resolve Emscripten's callMain across build variants, or null. */
-    function resolveCallMain() {
-        return (typeof Module !== 'undefined' && Module.callMain) ||
-               (typeof callMain === 'function' ? callMain : null);
-    }
-
     /**
-     * Run the example exactly once. Guarded by `hasRun` and by callMain being
-     * actually resolvable, so the triggers below can never run it prematurely.
+     * Attempt to run the example, retrying until it actually produces output.
+     *
+     * Rather than guessing when the Emscripten runtime is ready (which differs
+     * across builds and between a soft reload — cached WASM, fast init — and a
+     * hard reload, Ctrl+F5 — fresh fetch, slow init), we just try: if
+     * computeFromString reports it did not run (runtime not up yet), we wait and
+     * try again. Once it succeeds we stop. A generous cap avoids an unbounded
+     * loop if the module never initializes.
+     * @param {number} [attempt]  Current attempt number (internal).
      */
-    function runExampleOnce() {
+    function tryRunExample(attempt) {
         if (hasRun) return;
-        if (typeof resolveCallMain() !== 'function') return;
-        hasRun = true;
-        computeFromString(EXAMPLE_GRAPH_STRING);
-    }
-
-    /**
-     * @returns {boolean} true only once the Emscripten runtime has finished
-     * initializing (run() has executed). We deliberately do NOT treat the mere
-     * presence of Module.callMain as "ready": callMain is attached early, before
-     * the WASM module is compiled, so on a cache-busting hard reload (Ctrl+F5)
-     * that compile takes longer and we used to call into an uninitialized
-     * runtime — which silently did nothing. `calledRun` flips to true only after
-     * the runtime is up, so callMain can be invoked safely.
-     */
-    function wasmReady() {
-        return (typeof Module !== 'undefined') && Module.calledRun === true;
-    }
-
-    // Two triggers, both funnelling into runExampleOnce (itself idempotent and
-    // self-guarded), to stay robust across Emscripten builds and reload modes:
-    //   - Module.onRuntimeInitialized: the official "runtime is ready" hook.
-    //     Registered before init fires; we chain any pre-existing handler. The
-    //     callback itself is the readiness guarantee, hence no calledRun gate.
-    //   - a poll on calledRun: backstop for when we registered too late (init
-    //     already done) or onRuntimeInitialized was already consumed.
-    if (typeof Module !== 'undefined' && !wasmReady()) {
-        const prevInit = Module.onRuntimeInitialized;
-        Module.onRuntimeInitialized = function () {
-            if (typeof prevInit === 'function') prevInit();
-            // Defer so the runtime's own initial main() settles first.
-            setTimeout(runExampleOnce, 0);
-        };
-    }
-    const poll = setInterval(function () {
-        if (hasRun) { clearInterval(poll); return; }
-        if (wasmReady()) {
-            runExampleOnce();
-            if (hasRun) clearInterval(poll);
+        attempt = attempt || 1;
+        var ok = false;
+        try { ok = computeFromString(EXAMPLE_GRAPH_STRING); } catch (e) { ok = false; }
+        if (ok) { hasRun = true; return; }
+        if (attempt < 400) {            // ~20 s of retries at 50 ms each
+            setTimeout(function () { tryRunExample(attempt + 1); }, 50);
         }
-    }, 50);
+    }
+
+    // Kick off once the DOM exists (the draw functions need their containers),
+    // then let tryRunExample poll for the runtime by probing the result.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { tryRunExample(1); });
+    } else {
+        tryRunExample(1);
+    }
 })();
