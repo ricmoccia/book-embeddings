@@ -8,5 +8,6 @@ var searchData=
   ['renderrankbarsegments_5',['renderRankBarSegments',['../code__to__append_8js.html#a62da87a940d8eb99bd3c14680cd08d26',1,'code_to_append.js']]],
   ['repurposeimagedownloadbutton_6',['repurposeImageDownloadButton',['../code__to__append_8js.html#a557346587268b2454d43fdef797f73f7',1,'code_to_append.js']]],
   ['rootbct_7',['rootBCT',['../class_one_stack_layouts_enumerator.html#ae11c1a9f22235ccde80ab7f93c6353ba',1,'OneStackLayoutsEnumerator::rootBCT(TreeNode *rootOfBCT, int parentCutpoint=-1)'],['../class_one_stack_layouts_enumerator.html#ae11c1a9f22235ccde80ab7f93c6353ba',1,'OneStackLayoutsEnumerator::rootBCT(TreeNode *rootOfBCT, int parentCutpoint=-1)']]],
-  ['rootblockvalueof_8',['rootBlockValueOf',['../code__to__append_8js.html#abcf06c908100d0c7fe9d2bd53a3f95af',1,'code_to_append.js']]]
+  ['rootblockvalueof_8',['rootBlockValueOf',['../code__to__append_8js.html#abcf06c908100d0c7fe9d2bd53a3f95af',1,'code_to_append.js']]],
+  ['runexampleonce_9',['runExampleOnce',['../code__to__append_8js.html#aa056cdca2f5edb9b914b9bf614d9ea6d',1,'code_to_append.js']]]
 ];

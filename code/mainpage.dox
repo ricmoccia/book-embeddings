@@ -1,0 +1,90 @@
+/**
+ * @mainpage
+ *
+ * @tableofcontents
+ *
+ * An interactive tool for **enumerating and visualizing all 1-page upward book
+ * embeddings of a directed acyclic graph (DAG)**. Given a DAG, it computes
+ * every admissible linear order of the vertices along a spine such that all
+ * directed edges point the same way and can be drawn on a single page (a
+ * half-plane) without crossings, and lets you browse the whole family of such
+ * layouts together with the combinatorial structures that generate them.
+ *
+ * @section intro What you are looking at
+ *
+ * The screen is split into coordinated panels that always show the *same*
+ * layout, kept in lockstep as you navigate:
+ *
+ * - **1-stack layout** — the book embedding itself: vertices stacked along a
+ *   vertical spine, edges drawn as arcs on one side of it.
+ * - **BCT (Block-Cut Tree)** — the decomposition of the graph into biconnected
+ *   blocks and cutpoints, rooted at the block chosen for the current layout.
+ * - **FPQ-tree** — the structure that compactly encodes *all* admissible orders
+ *   for the current rooting; permuting its P-nodes yields the different layouts.
+ * - **Controls** — load a graph, step through layouts, and jump straight to one
+ *   by its identifier (ranking / unranking).
+ *
+ * Edges belonging to the same biconnected block share a pastel color
+ * (*block chromatism*); the same color is reused for that block's node in the
+ * BCT and for its F-node in the FPQ-tree, so the three views can be read
+ * together at a glance.
+ *
+ * @section pipeline How it works
+ *
+ * The enumeration engine is written in C++ on top of the OGDF graph library and
+ * compiled to WebAssembly with Emscripten; the browser front-end is plain
+ * JavaScript using vis-network for the drawing. When a graph is loaded, the C++
+ * core enumerates every layout and streams the layout, its BCT and its FPQ-tree
+ * to the page through a small line-based text protocol, which the JavaScript
+ * side parses and renders. See @ref OneStackLayoutsEnumerator for the heart of
+ * the enumeration and @ref FPQNode for the tree representation.
+ *
+ * @section input Input format
+ *
+ * A graph is a plain text file: first the vertex identifiers, one per line,
+ * then the directed edges, one per line, written as `from,to`. For example, a
+ * path 0 → 1 → 2 with the extra edge 0 → 2:
+ *
+ * @code
+ * 0
+ * 1
+ * 2
+ * 0,1
+ * 1,2
+ * 0,2
+ * @endcode
+ *
+ * On startup the tool loads a small built-in example, so every panel is
+ * populated immediately; uploading your own file replaces it.
+ *
+ * @section navigation Navigating the layouts
+ *
+ * Use **Next** / **Prev** to step through the layouts in lexicographic order.
+ * Every layout has a structured identifier of the form `(rooting, permutation)`:
+ * the first part selects which block is the root of the BCT (i.e. the initial
+ * block), the second selects one permutation among those of that rooting. The
+ * ranking / unranking box maps this identifier to and from a single integer, so
+ * you can jump directly to any layout.
+ *
+ * @section map Where to look in the code
+ *
+ * - @ref OneStackLayoutsEnumerator — enumeration, block decomposition,
+ *   admissible roots, and BCT / FPQ construction.
+ * - @ref FPQNode and @ref FPQType — the nodes of the FPQ-tree.
+ * - @ref BCTPermutationEnumerator — iterates the permutations of a rooting.
+ * - On the JavaScript side: `drawLayout`, `drawBCT` and `drawFPQ` render the
+ *   three graphical panels, while `getDataFromWasm` parses the C++ output.
+ *
+ * @section background Background
+ *
+ * The enumeration builds on Ivan Carlini's work on listing the 1-page book
+ * embeddings of DAGs, reformulated here through the notion of *admissible roots*
+ * and an FPQ-tree representation, with a mixed-radix ranking / unranking scheme
+ * for the resulting family of layouts. The ranking machinery follows the
+ * mixed-radix encoding of Di Battista, Grosso, Maragno and Patrignani
+ * (WALCOM 2025, arXiv:2411.10319).
+ *
+ * @author Riccardo Moccia
+ * @note This page is generated from the source comments by Doxygen. Do not edit
+ *       the generated HTML by hand — update this comment and regenerate.
+ */

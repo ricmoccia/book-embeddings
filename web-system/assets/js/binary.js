@@ -81,10 +81,16 @@ const BLOCK_COLOR_PALETTE = [
     '#b48ad4'  // pastel lavender
 ];
 
+// On load we no longer paint the hard-coded graph in the 1-stack panel only.
+// Instead all three panels start on a neutral placeholder ("loading") state;
+// the startup-example block at the end of this file then runs a real graph
+// through the full WASM pipeline as soon as the runtime is ready, so every
+// panel is populated together. To restore the instant hard-coded preview,
+// revert these three calls to drawLayout(graph, layouts[currentIndex]) etc.
 updateStatistics();
-drawLayout(graph, layouts[currentIndex]);
-drawBCT(bcts[currentIndex]);                  // shows the placeholder on first load.
-drawFPQ(fpqs[currentIndex], bcts[currentIndex]); // idem.
+drawLayout({ nodes: [], edges: [] }, []);
+drawBCT(null);
+drawFPQ(null, null);
 
 // =============================================================================
 // Graph file reading
@@ -543,7 +549,7 @@ function drawLayout(graph, layout) {
     // VERTICAL spine: nodes stacked top-to-bottom (x = 0); arcs bow to the RIGHT.
     const V = 75;
     graph.nodes.forEach(node => {
-        nodes.add({ id: mapping.get(node.label), label: node.label, x: 0, y: -mapping.get(node.label) * V });
+        nodes.add({ id: mapping.get(node.label), label: node.label, x: 0, y: mapping.get(node.label) * V });
     });
 
     graph.edges.forEach(edge => {
@@ -566,7 +572,7 @@ function drawLayout(graph, layout) {
     });
     const HEAD = maxSpan * V * 0.55;   // tune if arcs clip / too much room
     if (HEAD > 0) {
-        const midY = -(i - 1) * V / 2;
+        const midY = (i - 1) * V / 2;
         const invisible = {
             size: 0, shape: 'dot', label: '',
             color: { background: 'rgba(0,0,0,0)', border: 'rgba(0,0,0,0)' },
@@ -2154,3 +2160,111 @@ function ensureThreeSectionStyle() {
 })();
 
 console.log("FRONTEND BUILD: 2026-06-13-1");
+// =============================================================================
+// Startup example
+// -----------------------------------------------------------------------------
+// On load, run a real graph through the full WASM pipeline (exactly like the
+// "Compute Layouts" button, but without reading from #fileInput) so that the
+// 1-stack, BCT and FPQ panels are all populated immediately. This replaces the
+// old behaviour where only the 1-stack panel showed a hard-coded graph while
+// the other two stayed on their placeholder. Injected and idempotent, in line
+// with the rest of this file's runtime-style conventions.
+// =============================================================================
+(function () {
+    if (window.__startupExampleInstalled) return;
+    window.__startupExampleInstalled = true;
+
+    // -------------------------------------------------------------------------
+    // The graph used as the on-load example. By default it serializes the
+    // in-memory `graph` declared at the top of this file (a non-trivial DAG:
+    // 11 vertices, two blocks sharing cutpoints, multiple rootings). To use a
+    // different example, replace EXAMPLE_GRAPH_STRING with any graph in the
+    // "nodes one per line, then <from>,<to> edge lines" text format, e.g.:
+    //   const EXAMPLE_GRAPH_STRING = "0\n1\n2\n3\n0,1\n1,2\n0,3\n3,2\n";
+    // -------------------------------------------------------------------------
+    const EXAMPLE_GRAPH_STRING = (function () {
+        let s = "";
+        graph.nodes.forEach(function (n) { s += n.id + "\n"; });
+        graph.edges.forEach(function (e) { s += e.from + "," + e.to + "\n"; });
+        return s;
+    })();
+
+    /**
+     * Run the full WASM pipeline on a graph file string, mirroring the
+     * "Compute Layouts" click handler but sourcing the graph from a string
+     * instead of #fileInput. Repopulates layouts[]/bcts[]/fpqs[]/blocks[] and
+     * redraws all panels.
+     * @param {string} fileString  Graph in the nodes-then-edges text format.
+     */
+    function computeFromString(fileString) {
+        graph = getGraphFromFileString(fileString);
+        layouts = [];
+        bcts = [];
+        fpqs = [];
+        blocks = [];
+        edgeToBlock = new Map();
+        currentBCT = null;
+        currentFPQ = null;
+        currentBlocks = null;
+        currentIndex = 0;
+
+        const wasmCallMain =
+            (typeof Module !== 'undefined' && Module.callMain) ||
+            (typeof callMain === 'function' ? callMain : null);
+        if (typeof wasmCallMain !== 'function') {
+            console.error('Startup example: callMain not available yet; ' +
+                'example not loaded.');
+            return;
+        }
+        wasmCallMain([fileString]);
+
+        if (numberOfLayouts == 0) {
+            currentIndex = -1;
+            updateStatistics();
+            drawLayout({ nodes: [], edges: [] }, []);
+            drawBCT(null);
+            drawFPQ(null, null);
+        } else {
+            updateStatistics();
+            drawLayout(graph, layouts[currentIndex]);
+            drawBCT(bcts[currentIndex]);
+            drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
+        }
+    }
+
+    var hasRun = false;
+    /** Run the example exactly once, guarding against multiple triggers. */
+    function runExampleOnce() {
+        if (hasRun) return;
+        hasRun = true;
+        computeFromString(EXAMPLE_GRAPH_STRING);
+    }
+
+    /** @returns {boolean} true once the Emscripten runtime can run main(). */
+    function wasmReady() {
+        return (typeof Module !== 'undefined') &&
+               (typeof Module.callMain === 'function' || Module.calledRun === true);
+    }
+
+    // Run as soon as the WASM runtime is initialized. We use two triggers and a
+    // single-run guard (hasRun) so it fires exactly once regardless of which
+    // wins, to stay robust across Emscripten builds:
+    //   - hook Module.onRuntimeInitialized (chaining any existing handler);
+    //   - poll, covering the case where init already happened (and the hook was
+    //     already consumed) or Module is not defined yet at this point.
+    if (typeof Module !== 'undefined' && !wasmReady()) {
+        const prev = Module.onRuntimeInitialized;
+        Module.onRuntimeInitialized = function () {
+            if (typeof prev === 'function') prev();
+            setTimeout(runExampleOnce, 0);
+        };
+    }
+    const poll = setInterval(function () {
+        if (wasmReady()) {
+            clearInterval(poll);
+            setTimeout(runExampleOnce, 0);
+        }
+    }, 50);
+    // If already ready synchronously, the poll above will catch it on its first
+    // tick; nothing else to do.
+})();

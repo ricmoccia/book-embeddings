@@ -16,6 +16,13 @@
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  extensions: ["tex2jax.js"],
+  jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
@@ -118,8 +125,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_vars.h
 
 <div class="contents">
 <div class="textblock">Here is a list of all variables with links to the files they belong to:</div><br/>
-<div class="qindex"><a class="qindex" href="#index_b">B</a><div class="alphasepar"></div><a class="qindex" href="#index_c">C</a><div class="alphasepar"></div><a class="qindex" href="#index_e">E</a><div class="alphasepar"></div><a class="qindex" href="#index_f">F</a><div class="alphasepar"></div><a class="qindex" href="#index_g">G</a><div class="alphasepar"></div><a class="qindex" href="#index_i">I</a><div class="alphasepar"></div><a class="qindex" href="#index_l">L</a><div class="alphasepar"></div><a class="qindex" href="#index_n">N</a><div class="alphasepar"></div><a class="qindex" href="#index_r">R</a><div class="alphasepar"></div><a class="qindex" href="#index__">_</a></div>
+<div class="qindex"><a class="qindex" href="#index_b">B</a><div class="alphasepar"></div><a class="qindex" href="#index_c">C</a><div class="alphasepar"></div><a class="qindex" href="#index_e">E</a><div class="alphasepar"></div><a class="qindex" href="#index_f">F</a><div class="alphasepar"></div><a class="qindex" href="#index_g">G</a><div class="alphasepar"></div><a class="qindex" href="#index_h">H</a><div class="alphasepar"></div><a class="qindex" href="#index_i">I</a><div class="alphasepar"></div><a class="qindex" href="#index_l">L</a><div class="alphasepar"></div><a class="qindex" href="#index_n">N</a><div class="alphasepar"></div><a class="qindex" href="#index_p">P</a><div class="alphasepar"></div><a class="qindex" href="#index_r">R</a><div class="alphasepar"></div><a class="qindex" href="#index__">_</a></div>
 <ul>
+<li>__startupExampleInstalled&#160;:&#160;<a class="el" href="code__to__append_8js.html#a7a7ff68001d23caabfc3e7c016b5f68d">code_to_append.js</a></li>
 <li>_gridSizingNodes&#160;:&#160;<a class="el" href="code__to__append_8js.html#a7913fc43b972a5a7f2a67c643c9dbbef">code_to_append.js</a></li>
 <li>BCT_EDGE_STYLE&#160;:&#160;<a class="el" href="code__to__append_8js.html#a857c1040815ba47cbe6a184cbbb24513">code_to_append.js</a></li>
 <li>bctNetwork&#160;:&#160;<a class="el" href="code__to__append_8js.html#a334e04f87003db6133ed2bd594dbbe61">code_to_append.js</a></li>
@@ -132,13 +140,16 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_vars.h
 <li>currentIndex&#160;:&#160;<a class="el" href="code__to__append_8js.html#ae47c323738c2a0c3750b95c822b85c5c">code_to_append.js</a></li>
 <li>edgeToBlock&#160;:&#160;<a class="el" href="code__to__append_8js.html#aad2398e1aebb37a9ac01465171ff0312">code_to_append.js</a></li>
 <li>enumerator&#160;:&#160;<a class="el" href="main_8cpp.html#a90b3a0511cdee2d8f27d3ee8daea57ab">main.cpp</a></li>
+<li>EXAMPLE_GRAPH_STRING&#160;:&#160;<a class="el" href="code__to__append_8js.html#aafb9ddd1efd6f17b53b0037183e98cb1">code_to_append.js</a></li>
 <li>fpqNetwork&#160;:&#160;<a class="el" href="code__to__append_8js.html#a137c7494973d639061df4541160a9013">code_to_append.js</a></li>
 <li>fpqs&#160;:&#160;<a class="el" href="code__to__append_8js.html#a6a42f88c1cc6193575b48afe2b765dcc">code_to_append.js</a></li>
 <li>graph&#160;:&#160;<a class="el" href="code__to__append_8js.html#abccce86c0dd17279e8a8f463d126e50a">code_to_append.js</a></li>
+<li>hasRun&#160;:&#160;<a class="el" href="code__to__append_8js.html#a23b3652498ed16e2f69c44c1e59d291c">code_to_append.js</a></li>
 <li>init&#160;:&#160;<a class="el" href="code__to__append_8js.html#a2d69a61cd5921b348ebe2ee62900fd55">code_to_append.js</a></li>
 <li>lastLayoutError&#160;:&#160;<a class="el" href="code__to__append_8js.html#af06479fe4357b0a95605ca135a39f22e">code_to_append.js</a></li>
 <li>layouts&#160;:&#160;<a class="el" href="code__to__append_8js.html#a955f835b165d835a7d36bb408603f2a8">code_to_append.js</a></li>
 <li>numberOfLayouts&#160;:&#160;<a class="el" href="code__to__append_8js.html#a005d16691e3d9ade0de3d96be428567c">code_to_append.js</a></li>
+<li>poll&#160;:&#160;<a class="el" href="code__to__append_8js.html#a9f4c7277fb72c4b322d2851d99ceb4ec">code_to_append.js</a></li>
 <li>rankBarBuiltForLength&#160;:&#160;<a class="el" href="code__to__append_8js.html#a66afdfa71ec61d9de1018c1b7e379236">code_to_append.js</a></li>
 <li>rootingGroups&#160;:&#160;<a class="el" href="code__to__append_8js.html#ab1d9bfe511fbca000ab585815b1940d4">code_to_append.js</a></li>
 <li>rootingGroupsForLength&#160;:&#160;<a class="el" href="code__to__append_8js.html#a9f2e31a70a7e0678caa77a530ca953cd">code_to_append.js</a></li>

@@ -16,6 +16,13 @@
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  extensions: ["tex2jax.js"],
+  jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
@@ -212,6 +219,12 @@ of Y"), and reposition the marker.  <br /></td></tr>
 <tr class="memitem:ae58a360068a893fbae514a8dc536ad59" id="r_ae58a360068a893fbae514a8dc536ad59"><td class="memItemLeft">function else&#160;</td><td class="memItemRight"><a class="el" href="#ae58a360068a893fbae514a8dc536ad59">ensureChromeCompactStyle</a> ()</td></tr>
 <tr class="memitem:aeeb307f68a710db854fd4e0a190e88be" id="r_aeeb307f68a710db854fd4e0a190e88be"><td class="memItemLeft">function&#160;</td><td class="memItemRight"><a class="el" href="#aeeb307f68a710db854fd4e0a190e88be">fitControlsContent</a> ()</td></tr>
 <tr class="memitem:a711a4d451dc5b65eee687c7385105859" id="r_a711a4d451dc5b65eee687c7385105859"><td class="memItemLeft">function&#160;</td><td class="memItemRight"><a class="el" href="#a711a4d451dc5b65eee687c7385105859">ensureThreeSectionStyle</a> ()</td></tr>
+<tr class="memitem:a127aac29ce5d417c5837c4a442b40052" id="r_a127aac29ce5d417c5837c4a442b40052"><td class="memItemLeft">function&#160;</td><td class="memItemRight"><a class="el" href="#a127aac29ce5d417c5837c4a442b40052">computeFromString</a> (fileString)</td></tr>
+<tr class="memdesc:a127aac29ce5d417c5837c4a442b40052"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the full WASM pipeline on a graph file string, mirroring the "Compute Layouts" click handler but sourcing the graph from a string instead of #fileInput.  <br /></td></tr>
+<tr class="memitem:aa056cdca2f5edb9b914b9bf614d9ea6d" id="r_aa056cdca2f5edb9b914b9bf614d9ea6d"><td class="memItemLeft">function&#160;</td><td class="memItemRight"><a class="el" href="#aa056cdca2f5edb9b914b9bf614d9ea6d">runExampleOnce</a> ()</td></tr>
+<tr class="memdesc:aa056cdca2f5edb9b914b9bf614d9ea6d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run the example exactly once, guarding against multiple triggers.  <br /></td></tr>
+<tr class="memitem:a300d10b789a95c5f7ee11a589fa8fd58" id="r_a300d10b789a95c5f7ee11a589fa8fd58"><td class="memItemLeft">function&#160;</td><td class="memItemRight"><a class="el" href="#a300d10b789a95c5f7ee11a589fa8fd58">wasmReady</a> ()</td></tr>
+<tr class="memitem:a745d8a60e4842c734686510e1b0feedf" id="r_a745d8a60e4842c734686510e1b0feedf"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a745d8a60e4842c734686510e1b0feedf">if</a> (typeof Module !=='undefined' &amp;&amp;!<a class="el" href="#a300d10b789a95c5f7ee11a589fa8fd58">wasmReady</a>())</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -241,6 +254,10 @@ Variables</h2></td></tr>
 <tr class="memitem:af06479fe4357b0a95605ca135a39f22e" id="r_af06479fe4357b0a95605ca135a39f22e"><td class="memItemLeft">var&#160;</td><td class="memItemRight"><a class="el" href="#af06479fe4357b0a95605ca135a39f22e">lastLayoutError</a> = null</td></tr>
 <tr class="memitem:a7913fc43b972a5a7f2a67c643c9dbbef" id="r_a7913fc43b972a5a7f2a67c643c9dbbef"><td class="memItemLeft">var&#160;</td><td class="memItemRight"><a class="el" href="#a7913fc43b972a5a7f2a67c643c9dbbef">_gridSizingNodes</a> = -2</td></tr>
 <tr class="memitem:a2d69a61cd5921b348ebe2ee62900fd55" id="r_a2d69a61cd5921b348ebe2ee62900fd55"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a2d69a61cd5921b348ebe2ee62900fd55">init</a></td></tr>
+<tr class="memitem:a7a7ff68001d23caabfc3e7c016b5f68d" id="r_a7a7ff68001d23caabfc3e7c016b5f68d"><td class="memItemLeft">function window&#160;</td><td class="memItemRight"><a class="el" href="#a7a7ff68001d23caabfc3e7c016b5f68d">__startupExampleInstalled</a> = true</td></tr>
+<tr class="memitem:aafb9ddd1efd6f17b53b0037183e98cb1" id="r_aafb9ddd1efd6f17b53b0037183e98cb1"><td class="memItemLeft">const&#160;</td><td class="memItemRight"><a class="el" href="#aafb9ddd1efd6f17b53b0037183e98cb1">EXAMPLE_GRAPH_STRING</a></td></tr>
+<tr class="memitem:a23b3652498ed16e2f69c44c1e59d291c" id="r_a23b3652498ed16e2f69c44c1e59d291c"><td class="memItemLeft">var&#160;</td><td class="memItemRight"><a class="el" href="#a23b3652498ed16e2f69c44c1e59d291c">hasRun</a> = false</td></tr>
+<tr class="memitem:a9f4c7277fb72c4b322d2851d99ceb4ec" id="r_a9f4c7277fb72c4b322d2851d99ceb4ec"><td class="memItemLeft">const&#160;</td><td class="memItemRight"><a class="el" href="#a9f4c7277fb72c4b322d2851d99ceb4ec">poll</a></td></tr>
 </table>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
 <a id="aabd410f2e894791badc30a26b57dd1f3" name="aabd410f2e894791badc30a26b57dd1f3"></a>
@@ -260,7 +277,7 @@ Variables</h2></td></tr>
 
 <p>Column template for a node count: left 0.40 (small) -&gt; 0.30 (large). </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01962">1962</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01968">1968</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -298,7 +315,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01058">1058</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01064">1064</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -319,7 +336,7 @@ Variables</h2></td></tr>
 
 <p>Apply adaptive columns + viewport-filling rows (inline beats the stylesheet). </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01970">1970</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01976">1976</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -347,7 +364,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{string} Hex color string, e.g. "#f4a6a6". </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00505">505</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00511">511</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -380,7 +397,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{number} Block index, or -1 if the edge is unknown (typically before the WASM has been run). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00476">476</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00482">482</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -408,7 +425,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{Map&lt;string, number&gt;} Map from edge key to block index. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00457">457</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00463">463</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -441,7 +458,34 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{number} Global rank, or -1 if either index is out of range. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01349">1349</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01355">1355</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+
+</div>
+</div>
+<a id="a127aac29ce5d417c5837c4a442b40052" name="a127aac29ce5d417c5837c4a442b40052"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a127aac29ce5d417c5837c4a442b40052">&#9670;&#160;</a></span>computeFromString()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function computeFromString </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>fileString</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Run the full WASM pipeline on a graph file string, mirroring the "Compute Layouts" click handler but sourcing the graph from a string instead of #fileInput. </p>
+<p>Repopulates layouts[]/bcts[]/fpqs[]/blocks[] and redraws all panels. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">{string}</td><td>fileString Graph in the nodes-then-edges text format. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02197">2197</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -469,7 +513,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{?{rooting:number,perm:number,rootBlock:number,count:number}} null if k is outside every group. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01333">1333</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01339">1339</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -492,7 +536,7 @@ Variables</h2></td></tr>
 <p>Panels that haven't been rendered yet are skipped (a warning is logged for each).</p>
 <p>Note: some browsers (notably Chrome) ask the user to allow multiple downloads from the same site the first time this happens. Accept and the three files will arrive in the usual download folder. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01175">1175</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01181">1181</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -524,7 +568,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01152">1152</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01158">1158</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -552,7 +596,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00687">687</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00693">693</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -584,7 +628,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00847">847</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00853">853</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -616,7 +660,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00533">533</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00539">539</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -638,7 +682,7 @@ Variables</h2></td></tr>
 <p>Ensure the BCT legend block exists in the DOM, sitting just below the #bct-network panel. </p>
 <p>The legend lists the three edge-type colors. Idempotent: if the legend is already in the DOM, it is left untouched. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00643">643</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00649">649</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -677,7 +721,7 @@ Variables</h2></td></tr>
 <p>Inject styling for the Controls panel (#buttons): shrink the control buttons (.btn-left) so the whole content — including the ranking section — fits inside the fixed-height panel without overflowing. </p>
 <p>All .btn-left buttons share the rule, so they stay equal in size to one another. An id selector (#buttons ...) overrides whatever the .btn-left rules in styles.css set, so this needs no change to the stylesheet. Idempotent. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01396">1396</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01402">1402</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -699,7 +743,7 @@ Variables</h2></td></tr>
 <p>Ensure a download button is present in each graphic panel and that the existing "Download Image" label has been repurposed to download all 3 panels. </p>
 <p>Idempotent. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01043">1043</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01049">1049</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -721,7 +765,7 @@ Variables</h2></td></tr>
 <p>Inject the stylesheet that lets the bottom grid row grow with its content. </p>
 <p>Idempotent. An id selector overrides the fixed rows declared in styles.css; the max-width:900px media query is replicated so the single-column responsive layout keeps working (with the FPQ row, the 4th one, allowed to grow). </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01762">1762</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01768">1768</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -740,7 +784,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01953">1953</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01959">1959</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -779,7 +823,7 @@ Variables</h2></td></tr>
 <p>Inject the ranking/unranking controls into the bottom of the Controls panel (#buttons), below the download buttons. </p>
 <p>Idempotent (same pattern as ensureBCTLegend / ensureDownloadButtons), so no changes are needed in either index.html. The segmented bar, the rank readout and the unrank input are all built here once; their dynamic content is refreshed by <a class="el" href="#adcb1eac929d29212aa7eb20a39ffe935" title="Refresh all dynamic parts of the ranking UI: rebuild groups/segments if the dataset changed,...">refreshRankUI()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01416">1416</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01422">1422</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -798,7 +842,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02133">2133</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02139">2139</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -820,7 +864,7 @@ Variables</h2></td></tr>
 <p>Read the content of the file currently selected in #fileInput as text. </p>
 <dl class="section return"><dt>Returns</dt><dd>{Promise&lt;string&gt;} Resolves with the file content, rejects with an error message if no file is chosen or reading fails. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00096">96</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00102">102</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -839,7 +883,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02066">2066</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02072">2072</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -866,7 +910,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00332">332</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00338">338</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -911,7 +955,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{{nodes: Array&lt;{id:string,label:string}&gt;, edges: Array&lt;{from:string,to:string}&gt;}} </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00262">262</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00268">268</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -933,7 +977,7 @@ Variables</h2></td></tr>
 <p>Serialize the current <span class="tt"><a class="el" href="#abccce86c0dd17279e8a8f463d126e50a">graph</a></span> object into the text format expected by the C++ side: nodes one per line, then edges as "from,to" lines. </p>
 <dl class="section return"><dt>Returns</dt><dd>{string} Plain text representation of the graph. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00249">249</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00255">255</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -961,7 +1005,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{boolean} true if the jump happened, false if k was out of range. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01375">1375</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01381">1381</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -983,12 +1027,12 @@ Variables</h2></td></tr>
 <p>Handle a click on "Go" (or Enter in the input): parse the field, validate the resulting rank against the available range, and jump. </p>
 <p>Errors are shown inline in #unrank-error. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01707">1707</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01713">1713</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
 <a id="a97bfce994a8c1dd3a4d7dcbbecd8f9c0" name="a97bfce994a8c1dd3a4d7dcbbecd8f9c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97bfce994a8c1dd3a4d7dcbbecd8f9c0">&#9670;&#160;</a></span>if() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a97bfce994a8c1dd3a4d7dcbbecd8f9c0">&#9670;&#160;</a></span>if() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1004,8 +1048,27 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a745d8a60e4842c734686510e1b0feedf" name="a745d8a60e4842c734686510e1b0feedf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a745d8a60e4842c734686510e1b0feedf">&#9670;&#160;</a></span>if() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">if </td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>typeof Module !</em></span><span class="paramdefsep"> = </span><span class="paramdefval">=&#160;'undefined'&#160;&amp;&amp;&#160;!<a class="el" href="#a300d10b789a95c5f7ee11a589fa8fd58">wasmReady</a>()</span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02253">2253</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+
+</div>
+</div>
 <a id="a6e42e3ebecb5eb511d849a58cf98b36b" name="a6e42e3ebecb5eb511d849a58cf98b36b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e42e3ebecb5eb511d849a58cf98b36b">&#9670;&#160;</a></span>if() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e42e3ebecb5eb511d849a58cf98b36b">&#9670;&#160;</a></span>if() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1019,7 +1082,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01729">1729</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01735">1735</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +1103,7 @@ Variables</h2></td></tr>
 
 <p>Map a raw C++ stdout line to a friendly reason, or null if not a known one. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01888">1888</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01894">1894</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1067,7 +1130,7 @@ Variables</h2></td></tr>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01812">1812</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01818">1818</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1086,7 +1149,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01998">1998</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02004">2004</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1114,7 +1177,7 @@ Variables</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{{ok:true,k:number}|{ok:false,msg:string}} </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01361">1361</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01367">1367</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1137,7 +1200,7 @@ Variables</h2></td></tr>
 <p>After "Compute
 Layouts" this equals <span class="tt">bcts.length</span>; for the initial hard-coded demo (no WASM, empty <span class="tt"><a class="el" href="#adbcf92f9b61091bb5ce6c2c6e21f32d5">bcts</a></span>) it falls back to <span class="tt"><a class="el" href="#a005d16691e3d9ade0de3d96be428567c">numberOfLayouts</a></span>. </p><dl class="section return"><dt>Returns</dt><dd>{number} </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01276">1276</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01282">1282</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1159,7 +1222,7 @@ Layouts" this equals <span class="tt">bcts.length</span>; for the initial hard-c
 <p>(Re)build <span class="tt"><a class="el" href="#ab1d9bfe511fbca000ab585815b1940d4" title="Groups of consecutive layouts sharing the same rooting (admissible root block).">rootingGroups</a></span> from <span class="tt"><a class="el" href="#adbcf92f9b61091bb5ce6c2c6e21f32d5">bcts</a>[]</span> if the data changed since last time. </p>
 <p>Cheap to call on every refresh: it no-ops unless <span class="tt">bcts.length</span> changed. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01311">1311</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01317">1317</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1186,7 +1249,7 @@ Layouts" this equals <span class="tt">bcts.length</span>; for the initial hard-c
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01795">1795</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01801">1801</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1209,7 +1272,7 @@ Layouts" this equals <span class="tt">bcts.length</span>; for the initial hard-c
 of Y"), and reposition the marker. </p>
 <p>Safe to call any time; no-ops if the UI has not been injected yet. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01650">1650</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01656">1656</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1231,7 +1294,7 @@ of Y"), and reposition the marker. </p>
 <p>Rebuild the segments of the rank bar from <span class="tt"><a class="el" href="#ab1d9bfe511fbca000ab585815b1940d4" title="Groups of consecutive layouts sharing the same rooting (admissible root block).">rootingGroups</a></span>. </p>
 <p>One flex child per rooting, width proportional to its layout count, filled with the block color and labeled "B&lt;i&gt;" plus its inclusive rank range. Clicking a segment jumps to the first layout of that rooting. When no structure is available yet (initial demo, before Compute Layouts) a single hint cell is shown instead. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01569">1569</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01575">1575</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1260,7 +1323,7 @@ of Y"), and reposition the marker. </p>
 <p><span class="btn-text">The hidden helper input (#imageDownload) and the helper anchor (#canvasImg) are no longer needed and are tidied up: the input is removed, the anchor stays in the DOM (drawLayout's afterDrawing handler keeps referring to it by id) but is emptied, stripped of its <span class="tt">download</span> attribute and hidden.</span></p>
 <p><span class="btn-text">The dataset flag prevents duplicate wiring on repeated calls. </span></p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01101">1101</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01107">1107</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1293,7 +1356,28 @@ of Y"), and reposition the marker. </p>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>{number} Block index, or -1 if undeterminable. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01289">1289</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01295">1295</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+
+</div>
+</div>
+<a id="aa056cdca2f5edb9b914b9bf614d9ea6d" name="aa056cdca2f5edb9b914b9bf614d9ea6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa056cdca2f5edb9b914b9bf614d9ea6d">&#9670;&#160;</a></span>runExampleOnce()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function runExampleOnce </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Run the example exactly once, guarding against multiple triggers. </p>
+
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02235">2235</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1320,7 +1404,7 @@ of Y"), and reposition the marker. </p>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01780">1780</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01786">1786</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1345,7 +1429,7 @@ of Y"), and reposition the marker. </p>
 
 <p>Render an error message inside the #network (1-stack layout) panel. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01901">1901</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01907">1907</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1377,7 +1461,7 @@ of Y"), and reposition the marker. </p>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01203">1203</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01209">1209</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1399,7 +1483,7 @@ of Y"), and reposition the marker. </p>
 <p>Move the position marker to the current layout and highlight the current segment. </p>
 <p>The marker's horizontal position is (currentIndex + 0.5) / N across the whole bar: because each segment's flex weight equals its layout count, one layout maps to one equal slice of the bar width, so this percentage lands exactly on the current layout's slot regardless of segment sizes. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01619">1619</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01625">1625</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1418,11 +1502,47 @@ of Y"), and reposition the marker. </p>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00510">510</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l00516">516</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+
+</div>
+</div>
+<a id="a300d10b789a95c5f7ee11a589fa8fd58" name="a300d10b789a95c5f7ee11a589fa8fd58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a300d10b789a95c5f7ee11a589fa8fd58">&#9670;&#160;</a></span>wasmReady()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function wasmReady </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>{boolean} true once the Emscripten runtime can run <a class="el" href="main_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97">main()</a>. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02242">2242</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
 <a name="doc-var-members" id="doc-var-members"></a><h2 id="header-doc-var-members" class="groupheader">Variable Documentation</h2>
+<a id="a7a7ff68001d23caabfc3e7c016b5f68d" name="a7a7ff68001d23caabfc3e7c016b5f68d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a7ff68001d23caabfc3e7c016b5f68d">&#9670;&#160;</a></span>__startupExampleInstalled</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function window __startupExampleInstalled = true</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02173">2173</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+
+</div>
+</div>
 <a id="a7913fc43b972a5a7f2a67c643c9dbbef" name="a7913fc43b972a5a7f2a67c643c9dbbef"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7913fc43b972a5a7f2a67c643c9dbbef">&#9670;&#160;</a></span>_gridSizingNodes</h2>
 
@@ -1435,7 +1555,7 @@ of Y"), and reposition the marker. </p>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01951">1951</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01957">1957</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1624,6 +1744,29 @@ of Y"), and reposition the marker. </p>
 
 </div>
 </div>
+<a id="aafb9ddd1efd6f17b53b0037183e98cb1" name="aafb9ddd1efd6f17b53b0037183e98cb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aafb9ddd1efd6f17b53b0037183e98cb1">&#9670;&#160;</a></span>EXAMPLE_GRAPH_STRING</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const EXAMPLE_GRAPH_STRING</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">                           = (<span class="keyword">function</span> () {</div>
+<div class="line">    let s = <span class="stringliteral">&quot;&quot;</span>;</div>
+<div class="line">    <a class="code hl_variable" href="#abccce86c0dd17279e8a8f463d126e50a">graph</a>.nodes.forEach(<span class="keyword">function</span> (n) { s += n.id + <span class="stringliteral">&quot;\n&quot;</span>; });</div>
+<div class="line">    <a class="code hl_variable" href="#abccce86c0dd17279e8a8f463d126e50a">graph</a>.edges.forEach(<span class="keyword">function</span> (e) { s += e.from + <span class="stringliteral">&quot;,&quot;</span> + e.to + <span class="stringliteral">&quot;\n&quot;</span>; });</div>
+<div class="line">    <span class="keywordflow">return</span> s;</div>
+<div class="line">})()</div>
+<div class="ttc" id="acode__to__append_8js_html_abccce86c0dd17279e8a8f463d126e50a"><div class="ttname"><a href="#abccce86c0dd17279e8a8f463d126e50a">graph</a></div><div class="ttdeci">var graph</div><div class="ttdef"><b>Definition</b> <a href="code__to__append_8js_source.html#l00025">code_to_append.js:25</a></div></div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02183">2183</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+
+</div>
+</div>
 <a id="a137c7494973d639061df4541160a9013" name="a137c7494973d639061df4541160a9013"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a137c7494973d639061df4541160a9013">&#9670;&#160;</a></span>fpqNetwork</h2>
 
@@ -1676,6 +1819,22 @@ of Y"), and reposition the marker. </p>
 
 </div>
 </div>
+<a id="a23b3652498ed16e2f69c44c1e59d291c" name="a23b3652498ed16e2f69c44c1e59d291c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23b3652498ed16e2f69c44c1e59d291c">&#9670;&#160;</a></span>hasRun</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">var hasRun = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02233">2233</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+
+</div>
+</div>
 <a id="a2d69a61cd5921b348ebe2ee62900fd55" name="a2d69a61cd5921b348ebe2ee62900fd55"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2d69a61cd5921b348ebe2ee62900fd55">&#9670;&#160;</a></span>init</h2>
 
@@ -1688,7 +1847,7 @@ of Y"), and reposition the marker. </p>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02004">2004</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02010">2010</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1704,7 +1863,7 @@ of Y"), and reposition the marker. </p>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01885">1885</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01891">1891</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1740,6 +1899,31 @@ of Y"), and reposition the marker. </p>
 
 </div>
 </div>
+<a id="a9f4c7277fb72c4b322d2851d99ceb4ec" name="a9f4c7277fb72c4b322d2851d99ceb4ec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f4c7277fb72c4b322d2851d99ceb4ec">&#9670;&#160;</a></span>poll</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const poll</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">           = setInterval(<span class="keyword">function</span> () {</div>
+<div class="line">    <span class="keywordflow">if</span> (<a class="code hl_function" href="#a300d10b789a95c5f7ee11a589fa8fd58">wasmReady</a>()) {</div>
+<div class="line">        clearInterval(<a class="code hl_variable" href="#a9f4c7277fb72c4b322d2851d99ceb4ec">poll</a>);</div>
+<div class="line">        setTimeout(<a class="code hl_function" href="#aa056cdca2f5edb9b914b9bf614d9ea6d">runExampleOnce</a>, 0);</div>
+<div class="line">    }</div>
+<div class="line">}, 50)</div>
+<div class="ttc" id="acode__to__append_8js_html_a300d10b789a95c5f7ee11a589fa8fd58"><div class="ttname"><a href="#a300d10b789a95c5f7ee11a589fa8fd58">wasmReady</a></div><div class="ttdeci">function wasmReady()</div><div class="ttdef"><b>Definition</b> <a href="code__to__append_8js_source.html#l02242">code_to_append.js:2242</a></div></div>
+<div class="ttc" id="acode__to__append_8js_html_a9f4c7277fb72c4b322d2851d99ceb4ec"><div class="ttname"><a href="#a9f4c7277fb72c4b322d2851d99ceb4ec">poll</a></div><div class="ttdeci">const poll</div><div class="ttdef"><b>Definition</b> <a href="code__to__append_8js_source.html#l02260">code_to_append.js:2260</a></div></div>
+<div class="ttc" id="acode__to__append_8js_html_aa056cdca2f5edb9b914b9bf614d9ea6d"><div class="ttname"><a href="#aa056cdca2f5edb9b914b9bf614d9ea6d">runExampleOnce</a></div><div class="ttdeci">function runExampleOnce()</div><div class="ttdoc">Run the example exactly once, guarding against multiple triggers.</div><div class="ttdef"><b>Definition</b> <a href="code__to__append_8js_source.html#l02235">code_to_append.js:2235</a></div></div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l02260">2260</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+
+</div>
+</div>
 <a id="a66afdfa71ec61d9de1018c1b7e379236" name="a66afdfa71ec61d9de1018c1b7e379236"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a66afdfa71ec61d9de1018c1b7e379236">&#9670;&#160;</a></span>rankBarBuiltForLength</h2>
 
@@ -1754,7 +1938,7 @@ of Y"), and reposition the marker. </p>
 
 <p><span class="tt"><a class="el" href="#a9f2e31a70a7e0678caa77a530ca953cd" title="bcts.length the groups were last built for (cache key).">rootingGroupsForLength</a></span> the bar segments were last rendered for. </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01268">1268</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01274">1274</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1773,7 +1957,7 @@ of Y"), and reposition the marker. </p>
 <p>Groups of consecutive layouts sharing the same rooting (admissible root block). </p>
 <p>Rebuilt lazily from <span class="tt"><a class="el" href="#adbcf92f9b61091bb5ce6c2c6e21f32d5">bcts</a>[]</span>. Each entry: { rootBlock:&lt;blockIndex&gt;, start:&lt;firstRank&gt;, count:&lt;n&gt;, end:&lt;lastRank&gt; } @type {Array&lt;{rootBlock:number,start:number,count:number,end:number}&gt;} </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01262">1262</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01268">1268</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>
@@ -1792,7 +1976,7 @@ of Y"), and reposition the marker. </p>
 <p><span class="tt">bcts.length</span> the groups were last built for (cache key). </p>
 <p>@type {number} </p>
 
-<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01265">1265</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
+<p class="definition">Definition at line <a class="el" href="code__to__append_8js_source.html#l01271">1271</a> of file <a class="el" href="code__to__append_8js_source.html">code_to_append.js</a>.</p>
 
 </div>
 </div>

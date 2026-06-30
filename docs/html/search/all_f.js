@@ -14,5 +14,6 @@ var searchData=
   ['rootblockvalueof_11',['rootBlockValueOf',['../code__to__append_8js.html#abcf06c908100d0c7fe9d2bd53a3f95af',1,'code_to_append.js']]],
   ['rootinggroups_12',['rootingGroups',['../code__to__append_8js.html#ab1d9bfe511fbca000ab585815b1940d4',1,'code_to_append.js']]],
   ['rootinggroupsforlength_13',['rootingGroupsForLength',['../code__to__append_8js.html#a9f2e31a70a7e0678caa77a530ca953cd',1,'code_to_append.js']]],
-  ['rootings_14',['rootings',['../class_one_stack_layouts_enumerator.html#ab277463ad25df40bcf8a88fb9802db79',1,'OneStackLayoutsEnumerator']]]
+  ['rootings_14',['rootings',['../class_one_stack_layouts_enumerator.html#ab277463ad25df40bcf8a88fb9802db79',1,'OneStackLayoutsEnumerator']]],
+  ['runexampleonce_15',['runExampleOnce',['../code__to__append_8js.html#aa056cdca2f5edb9b914b9bf614d9ea6d',1,'code_to_append.js']]]
 ];

@@ -16,6 +16,13 @@
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  extensions: ["tex2jax.js"],
+  jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
@@ -1083,11 +1090,11 @@ pair" has been found and no admissible rooting exists for the current choice of 
 
 <p>Counts the total number of valid 1-stack layouts. </p>
 <p>Implements the EXACT formula from the thesis (Sec. 3.2):   </p><p class="formulaDsp">
-<picture><source srcset="form_0_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaDsp" alt="\&zwj;[    N = \sum_{B \in R} \prod_{p \in P(T_B)} |p|!
-\&zwj;]" src="form_0.png"/></picture>
+\[    N = \sum_{B \in R} \prod_{p \in P(T_B)} |p|!
+\]
 </p>
-<p> where <picture><source srcset="form_1_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$R$" src="form_1.png"/></picture> is the set of admissible roots and <picture><source srcset="form_2_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$P(T_B)$" src="form_2.png"/></picture> is the set of permutable groups (source-children and sink-children of each cutpoint in the BCT rooted at <picture><source srcset="form_3_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$B$" src="form_3.png"/></picture>).</p>
-<p>This is preferable to the cheaper <picture><source srcset="form_4_dark.png" media="(prefers-color-scheme: dark)"/><img class="formulaInl" alt="$|R| \cdot \text{single\_product}$" src="form_4.png"/></picture> shortcut because it computes the count even if, for any reason, the number of permutations per rooting differs (the thesis proves equality but here it is actually computed).</p>
+<p> where \(R\) is the set of admissible roots and \(P(T_B)\) is the set of permutable groups (source-children and sink-children of each cutpoint in the BCT rooted at \(B\)).</p>
+<p>This is preferable to the cheaper \(|R| \cdot \text{single\_product}\) shortcut because it computes the count even if, for any reason, the number of permutations per rooting differs (the thesis proves equality but here it is actually computed).</p>
 <dl class="section return"><dt>Returns</dt><dd>Total number of distinct 1-stack layouts.</dd></dl>
 <dl class="section pre"><dt>Precondition</dt><dd>rootBCT must have been called for every root in <code>rootings</code>, or will be called internally on demand (it is idempotent). </dd></dl>
 

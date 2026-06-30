@@ -9,7 +9,7 @@ OUTPUT_DIRECTORY    = docs
 # compilato/patchato e sporcherebbe la doc).
 INPUT               = code web-system/assets/js/code_to_append.js
 EXCLUDE             = code/build
-FILE_PATTERNS       = *.cpp *.h *.hpp *.js
+FILE_PATTERNS       = *.cpp *.h *.hpp *.js *.dox
 EXTENSION_MAPPING   = js=JavaScript
 RECURSIVE           = YES
 
@@ -29,5 +29,7 @@ HAVE_DOT            = NO
 CLASS_GRAPH         = NO
 COLLABORATION_GRAPH = NO
 CALL_GRAPH          = NO
-CALLER_GRAPH        = NOUSE_MATHJAX = YES
+CALLER_GRAPH        = NO
+USE_MATHJAX = YES
 WARN_IF_DOC_ERROR = NO
+WARN_IF_INCOMPLETE_DOC = NO

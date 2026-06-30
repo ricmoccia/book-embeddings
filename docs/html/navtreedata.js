@@ -25,6 +25,12 @@
 var NAVTREE =
 [
   [ "Book Embeddings Visualizer", "index.html", [
+    [ "What you are looking at", "index.html#intro", null ],
+    [ "How it works", "index.html#pipeline", null ],
+    [ "Input format", "index.html#input", null ],
+    [ "Navigating the layouts", "index.html#navigation", null ],
+    [ "Where to look in the code", "index.html#map", null ],
+    [ "Background", "index.html#background", null ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],

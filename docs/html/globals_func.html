@@ -16,6 +16,13 @@
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  extensions: ["tex2jax.js"],
+  jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
@@ -118,7 +125,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func.h
 
 <div class="contents">
 <div class="textblock">Here is a list of all functions with links to the files they belong to:</div><br/>
-<div class="qindex"><a class="qindex" href="#index_a">A</a><div class="alphasepar"></div><a class="qindex" href="#index_b">B</a><div class="alphasepar"></div><a class="qindex" href="#index_c">C</a><div class="alphasepar"></div><a class="qindex" href="#index_d">D</a><div class="alphasepar"></div><a class="qindex" href="#index_e">E</a><div class="alphasepar"></div><a class="qindex" href="#index_f">F</a><div class="alphasepar"></div><a class="qindex" href="#index_g">G</a><div class="alphasepar"></div><a class="qindex" href="#index_h">H</a><div class="alphasepar"></div><a class="qindex" href="#index_i">I</a><div class="alphasepar"></div><a class="qindex" href="#index_m">M</a><div class="alphasepar"></div><a class="qindex" href="#index_o">O</a><div class="alphasepar"></div><a class="qindex" href="#index_p">P</a><div class="alphasepar"></div><a class="qindex" href="#index_r">R</a><div class="alphasepar"></div><a class="qindex" href="#index_s">S</a><div class="alphasepar"></div><a class="qindex" href="#index_t">T</a><div class="alphasepar"></div><a class="qindex" href="#index_u">U</a></div>
+<div class="qindex"><a class="qindex" href="#index_a">A</a><div class="alphasepar"></div><a class="qindex" href="#index_b">B</a><div class="alphasepar"></div><a class="qindex" href="#index_c">C</a><div class="alphasepar"></div><a class="qindex" href="#index_d">D</a><div class="alphasepar"></div><a class="qindex" href="#index_e">E</a><div class="alphasepar"></div><a class="qindex" href="#index_f">F</a><div class="alphasepar"></div><a class="qindex" href="#index_g">G</a><div class="alphasepar"></div><a class="qindex" href="#index_h">H</a><div class="alphasepar"></div><a class="qindex" href="#index_i">I</a><div class="alphasepar"></div><a class="qindex" href="#index_m">M</a><div class="alphasepar"></div><a class="qindex" href="#index_o">O</a><div class="alphasepar"></div><a class="qindex" href="#index_p">P</a><div class="alphasepar"></div><a class="qindex" href="#index_r">R</a><div class="alphasepar"></div><a class="qindex" href="#index_s">S</a><div class="alphasepar"></div><a class="qindex" href="#index_t">T</a><div class="alphasepar"></div><a class="qindex" href="#index_u">U</a><div class="alphasepar"></div><a class="qindex" href="#index_w">W</a></div>
 
 
 <h3 class="doxsection"><a id="index_a" name="index_a"></a>- a -</h3><ul>
@@ -137,6 +144,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func.h
 
 <h3 class="doxsection"><a id="index_c" name="index_c"></a>- c -</h3><ul>
 <li>composeRank()&#160;:&#160;<a class="el" href="code__to__append_8js.html#a2ff58ac1218946d61d09169b57244425">code_to_append.js</a></li>
+<li>computeFromString()&#160;:&#160;<a class="el" href="code__to__append_8js.html#a127aac29ce5d417c5837c4a442b40052">code_to_append.js</a></li>
 </ul>
 
 
@@ -216,6 +224,7 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func.h
 <li>renderRankBarSegments()&#160;:&#160;<a class="el" href="code__to__append_8js.html#a62da87a940d8eb99bd3c14680cd08d26">code_to_append.js</a></li>
 <li>repurposeImageDownloadButton()&#160;:&#160;<a class="el" href="code__to__append_8js.html#a557346587268b2454d43fdef797f73f7">code_to_append.js</a></li>
 <li>rootBlockValueOf()&#160;:&#160;<a class="el" href="code__to__append_8js.html#abcf06c908100d0c7fe9d2bd53a3f95af">code_to_append.js</a></li>
+<li>runExampleOnce()&#160;:&#160;<a class="el" href="code__to__append_8js.html#aa056cdca2f5edb9b914b9bf614d9ea6d">code_to_append.js</a></li>
 </ul>
 
 
@@ -233,6 +242,11 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('globals_func.h
 <h3 class="doxsection"><a id="index_u" name="index_u"></a>- u -</h3><ul>
 <li>updateRankMarker()&#160;:&#160;<a class="el" href="code__to__append_8js.html#a58e4a15ecf1d08bbf370803aa76021ca">code_to_append.js</a></li>
 <li>updateStatistics()&#160;:&#160;<a class="el" href="code__to__append_8js.html#a271e04350767194d8f862b52050b37f2">code_to_append.js</a></li>
+</ul>
+
+
+<h3 class="doxsection"><a id="index_w" name="index_w"></a>- w -</h3><ul>
+<li>wasmReady()&#160;:&#160;<a class="el" href="code__to__append_8js.html#a300d10b789a95c5f7ee11a589fa8fd58">code_to_append.js</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

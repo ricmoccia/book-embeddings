@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.17.0"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Book Embeddings Visualizer: Main Page</title>
+<title>Book Embeddings Visualizer: Book Embeddings Visualizer</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="codefolding.js"></script>
 <script type="text/javascript" src="clipboard.js"></script>
@@ -16,6 +16,13 @@
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  extensions: ["tex2jax.js"],
+  jax: ["input/TeX","output/HTML-CSS"],
+});
+</script>
+<script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 const theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
@@ -116,13 +123,61 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('index.html',''
 </div>
 </div>
 
-<div class="header">
-  <div class="headertitle"><div class="title">Book Embeddings Visualizer Documentation</div></div>
+<div><div class="header">
+  <div class="headertitle"><div class="title">Book Embeddings Visualizer </div></div>
 </div><!--header-->
 <div class="contents">
+<div class="textblock"><p>An interactive tool for <b>enumerating and visualizing all 1-page upward book embeddings of a directed acyclic graph (DAG)</b>. Given a DAG, it computes every admissible linear order of the vertices along a spine such that all directed edges point the same way and can be drawn on a single page (a half-plane) without crossings, and lets you browse the whole family of such layouts together with the combinatorial structures that generate them.</p>
+<h1 class="doxsection"><a class="anchor" id="intro"></a>
+What you are looking at</h1>
+<p>The screen is split into coordinated panels that always show the <em>same</em> layout, kept in lockstep as you navigate:</p>
+<ul>
+<li><b>1-stack layout</b> — the book embedding itself: vertices stacked along a vertical spine, edges drawn as arcs on one side of it.</li>
+<li><b>BCT (Block-Cut Tree)</b> — the decomposition of the graph into biconnected blocks and cutpoints, rooted at the block chosen for the current layout.</li>
+<li><b>FPQ-tree</b> — the structure that compactly encodes <em>all</em> admissible orders for the current rooting; permuting its P-nodes yields the different layouts.</li>
+<li><b>Controls</b> — load a graph, step through layouts, and jump straight to one by its identifier (ranking / unranking).</li>
+</ul>
+<p>Edges belonging to the same biconnected block share a pastel color (<em>block chromatism</em>); the same color is reused for that block's node in the BCT and for its F-node in the FPQ-tree, so the three views can be read together at a glance.</p>
+<h1 class="doxsection"><a class="anchor" id="pipeline"></a>
+How it works</h1>
+<p>The enumeration engine is written in C++ on top of the OGDF graph library and compiled to WebAssembly with Emscripten; the browser front-end is plain JavaScript using vis-network for the drawing. When a graph is loaded, the C++ core enumerates every layout and streams the layout, its BCT and its FPQ-tree to the page through a small line-based text protocol, which the JavaScript side parses and renders. See <a class="el" href="class_one_stack_layouts_enumerator.html" title="OneStackLayoutsEnumerator">OneStackLayoutsEnumerator</a> for the heart of the enumeration and <a class="el" href="class_f_p_q_node.html" title="FPQNode">FPQNode</a> for the tree representation.</p>
+<h1 class="doxsection"><a class="anchor" id="input"></a>
+Input format</h1>
+<p>A graph is a plain text file: first the vertex identifiers, one per line, then the directed edges, one per line, written as <span class="tt">from,to</span>. For example, a path 0 → 1 → 2 with the extra edge 0 → 2:</p>
+<div class="fragment"><div class="line">0</div>
+<div class="line">1</div>
+<div class="line">2</div>
+<div class="line">0,1</div>
+<div class="line">1,2</div>
+<div class="line">0,2</div>
+</div><!-- fragment --><p>On startup the tool loads a small built-in example, so every panel is populated immediately; uploading your own file replaces it.</p>
+<h1 class="doxsection"><a class="anchor" id="navigation"></a>
+Navigating the layouts</h1>
+<p>Use <b>Next</b> / <b>Prev</b> to step through the layouts in lexicographic order. Every layout has a structured identifier of the form <span class="tt">(rooting, permutation)</span>: the first part selects which block is the root of the BCT (i.e. the initial block), the second selects one permutation among those of that rooting. The ranking / unranking box maps this identifier to and from a single integer, so you can jump directly to any layout.</p>
+<h1 class="doxsection"><a class="anchor" id="map"></a>
+Where to look in the code</h1>
+<ul>
+<li><a class="el" href="class_one_stack_layouts_enumerator.html" title="OneStackLayoutsEnumerator">OneStackLayoutsEnumerator</a> — enumeration, block decomposition, admissible roots, and BCT / FPQ construction.</li>
+<li><a class="el" href="class_f_p_q_node.html" title="FPQNode">FPQNode</a> and <a class="el" href="main__enum_8cpp.html#afa6c2cd252617890bddf6099ab6de3e4" title="FPQType">FPQType</a> — the nodes of the FPQ-tree.</li>
+<li><a class="el" href="class_b_c_t_permutation_enumerator.html" title="BCTPermutationEnumerator">BCTPermutationEnumerator</a> — iterates the permutations of a rooting.</li>
+<li>On the JavaScript side: <span class="tt"><a class="el" href="code__to__append_8js.html#adb61dd544ad82cb860af0c616685c55d" title="Draw the 1-stack layout in the network DOM element.">drawLayout</a></span>, <span class="tt"><a class="el" href="code__to__append_8js.html#a3db13af56d5a500187f37dd35b739048" title="Draw the BCT corresponding to the current layout.">drawBCT</a></span> and <span class="tt"><a class="el" href="code__to__append_8js.html#a728ec94b3ce755b15c307b6d4391236f" title="Draw the FPQ-tree associated with the current layout.">drawFPQ</a></span> render the three graphical panels, while <span class="tt"><a class="el" href="code__to__append_8js.html#ab672ccb1748e83d7fbadeb998ede1779" title="Dispatch a single stdout line emitted by the WASM module to the appropriate state-updating branch.">getDataFromWasm</a></span> parses the C++ output.</li>
+</ul>
+<h1 class="doxsection"><a class="anchor" id="background"></a>
+Background</h1>
+<p>The enumeration builds on Ivan Carlini's work on listing the 1-page book embeddings of DAGs, reformulated here through the notion of <em>admissible roots</em> and an FPQ-tree representation, with a mixed-radix ranking / unranking scheme for the resulting family of layouts. The ranking machinery follows the mixed-radix encoding of Di Battista, Grosso, Maragno and Patrignani (WALCOM 2025, arXiv:2411.10319).</p>
+<dl class="section author"><dt>Author</dt><dd>Riccardo Moccia </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>This page is generated from the source comments by Doxygen. Do not edit the generated HTML by hand — update this comment and regenerate. </dd></dl>
+</div></div><!-- PageDoc -->
 <a href="doxygen_crawl.html"></a>
-</div><!-- contents -->
 </div><!-- doc-content -->
+</div><!-- contents -->
+<div id="page-nav" class="page-nav-panel">
+<div id="page-nav-resize-handle"></div>
+<div id="page-nav-tree">
+<div id="page-nav-contents">
+</div><!-- page-nav-contents -->
+</div><!-- page-nav-tree -->
+</div><!-- page-nav -->
 </div><!-- container -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
