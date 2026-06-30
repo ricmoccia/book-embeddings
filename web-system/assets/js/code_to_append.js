@@ -2231,38 +2231,57 @@ console.log("FRONTEND BUILD: 2026-06-13-1");
     }
 
     var hasRun = false;
-    /** Run the example exactly once, guarding against multiple triggers. */
+
+    /** Resolve Emscripten's callMain across build variants, or null. */
+    function resolveCallMain() {
+        return (typeof Module !== 'undefined' && Module.callMain) ||
+               (typeof callMain === 'function' ? callMain : null);
+    }
+
+    /**
+     * Run the example exactly once. Guarded by `hasRun` and by callMain being
+     * actually resolvable, so the triggers below can never run it prematurely.
+     */
     function runExampleOnce() {
         if (hasRun) return;
+        if (typeof resolveCallMain() !== 'function') return;
         hasRun = true;
         computeFromString(EXAMPLE_GRAPH_STRING);
     }
 
-    /** @returns {boolean} true once the Emscripten runtime can run main(). */
+    /**
+     * @returns {boolean} true only once the Emscripten runtime has finished
+     * initializing (run() has executed). We deliberately do NOT treat the mere
+     * presence of Module.callMain as "ready": callMain is attached early, before
+     * the WASM module is compiled, so on a cache-busting hard reload (Ctrl+F5)
+     * that compile takes longer and we used to call into an uninitialized
+     * runtime — which silently did nothing. `calledRun` flips to true only after
+     * the runtime is up, so callMain can be invoked safely.
+     */
     function wasmReady() {
-        return (typeof Module !== 'undefined') &&
-               (typeof Module.callMain === 'function' || Module.calledRun === true);
+        return (typeof Module !== 'undefined') && Module.calledRun === true;
     }
 
-    // Run as soon as the WASM runtime is initialized. We use two triggers and a
-    // single-run guard (hasRun) so it fires exactly once regardless of which
-    // wins, to stay robust across Emscripten builds:
-    //   - hook Module.onRuntimeInitialized (chaining any existing handler);
-    //   - poll, covering the case where init already happened (and the hook was
-    //     already consumed) or Module is not defined yet at this point.
+    // Two triggers, both funnelling into runExampleOnce (itself idempotent and
+    // self-guarded), to stay robust across Emscripten builds and reload modes:
+    //   - Module.onRuntimeInitialized: the official "runtime is ready" hook.
+    //     Registered before init fires; we chain any pre-existing handler. The
+    //     callback itself is the readiness guarantee, hence no calledRun gate.
+    //   - a poll on calledRun: backstop for when we registered too late (init
+    //     already done) or onRuntimeInitialized was already consumed.
     if (typeof Module !== 'undefined' && !wasmReady()) {
-        const prev = Module.onRuntimeInitialized;
+        const prevInit = Module.onRuntimeInitialized;
         Module.onRuntimeInitialized = function () {
-            if (typeof prev === 'function') prev();
+            if (typeof prevInit === 'function') prevInit();
+            // Defer so the runtime's own initial main() settles first.
             setTimeout(runExampleOnce, 0);
         };
     }
     const poll = setInterval(function () {
+        if (hasRun) { clearInterval(poll); return; }
         if (wasmReady()) {
-            clearInterval(poll);
-            setTimeout(runExampleOnce, 0);
+            runExampleOnce();
+            if (hasRun) clearInterval(poll);
         }
     }, 50);
-    // If already ready synchronously, the poll above will catch it on its first
-    // tick; nothing else to do.
 })();
