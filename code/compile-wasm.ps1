@@ -54,6 +54,7 @@ try {
         -lOGDF -lCOIN `
         -s ALLOW_MEMORY_GROWTH=1 `
         -s NO_DISABLE_EXCEPTION_CATCHING `
+        -s STACK_SIZE=268435456 `
         -s "EXPORTED_FUNCTIONS=['_main']" `
         -s "EXPORTED_RUNTIME_METHODS=['callMain','ccall']"
     if ($LASTEXITCODE -ne 0) { throw "Link fallito (codice $LASTEXITCODE)" }

@@ -10,6 +10,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <sstream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <queue>
@@ -487,7 +488,7 @@ class OneStackLayoutsEnumerator {
 			FPQNode* fpqRoot = buildFPQTree(treeNodeOfComponent[rootings[currentRooting]],
 											enumerator.lastUsedPermutations);
 			printFPQ(fpqRoot);
-			cleanupFPQ();
+			currentFPQRoot = fpqRoot;   // keep alive for JSON export; freed by next buildFPQTree / destructor
 
 			Array<int, int> result = mergeLayouts(&order, treeNodeOfComponent[rootings[currentRooting]]);
 			resultsCounter++;
@@ -498,6 +499,258 @@ class OneStackLayoutsEnumerator {
 		/// @return The total number of 1-stack layouts found.
 		int numberOfLayouts() {
 			return numberOfOneStackLayouts;
+		}
+
+		/// Free the FPQ tree of the last layout when the enumerator is destroyed.
+		~OneStackLayoutsEnumerator() { cleanupFPQ(); }
+
+		// ---- JSON export of the current layout's BCT and FPQ (used by the CLI) ----
+
+		/// Recursive: emit one FPQ node and its subtree as nested JSON.
+		void fpqNodeToJson(FPQNode* u, std::ostream& os) {
+			os << "{\"id\":" << u->id
+			   << ",\"type\":\"" << fpqTypeToStr(u->type) << "\"";
+			if (u->type == FPQType::F_NODE_BLOCK) os << ",\"block\":" << u->blockIndex;
+			if (u->type == FPQType::LEAF)         os << ",\"value\":" << u->value;
+			os << ",\"children\":[";
+			for (size_t i = 0; i < u->children.size(); i++) {
+				if (i) os << ",";
+				fpqNodeToJson(u->children[i], os);
+			}
+			os << "]}";
+		}
+
+		/// Recursive: emit one BCT node and its subtree as nested JSON, with the
+		/// children ordered exactly as printBCT orders them (so JSON and drawing
+		/// agree). `role` is the parent->child edge type (0=source, 1=intermediate,
+		/// 2=sink); -1 at the root.
+		void bctNodeToJson(TreeNode* u, int rootValue, int role,
+				const std::unordered_map<int, std::unordered_map<int, std::vector<int>>>& perms,
+				std::ostream& os) {
+			os << "{\"id\":" << u->id
+			   << ",\"kind\":\"" << (u->isCutpoint ? "cutpoint" : "block") << "\""
+			   << ",\"value\":" << u->value;
+			if (role >= 0) os << ",\"role\":" << role;
+
+			std::vector<TreeNode*> kids;
+			if (u->isCutpoint) {
+				kids = orderedChildrenOfCutpoint(u, rootValue, perms);
+			} else {
+				for (int t = 0; t < 3; t++)
+					for (TreeNode* c : u->getChildren(rootValue, t)) kids.push_back(c);
+			}
+
+			os << ",\"children\":[";
+			for (size_t i = 0; i < kids.size(); i++) {
+				if (i) os << ",";
+				int et = 1;                       // recover the parent->child edge type
+				for (int t = 0; t < 3; t++)
+					for (TreeNode* k : u->getChildren(rootValue, t))
+						if (k == kids[i]) et = t;
+				bctNodeToJson(kids[i], rootValue, et, perms, os);
+			}
+			os << "]}";
+		}
+
+		/// Emit the CURRENT FPQ tree as JSON (call right after getNext()).
+		void writeFpqJson(std::ostream& os) {
+			if (currentFPQRoot == nullptr) { os << "null"; return; }
+			fpqNodeToJson(currentFPQRoot, os);
+		}
+
+		/// Emit the CURRENT rooted BCT as JSON (call right after getNext()).
+		void writeBctJson(std::ostream& os) {
+			TreeNode* root = treeNodeOfComponent[rootings[currentRooting]];
+			bctNodeToJson(root, root->value, -1, enumerator.lastUsedPermutations, os);
+		}
+
+		/// Emit the biconnected block decomposition as JSON: an array of blocks,
+		/// each an array of {from,to} edges. Lets the web color edges by block
+		/// (chromatism) in lazy mode, where BLOCKS_* text output is suppressed.
+		void writeBlocksJson(std::ostream& os) {
+			os << "[";
+			for (int i = 0; i < numberOfBiconnectedComponents; i++) {
+				if (i) os << ",";
+				os << "[";
+				bool first = true;
+				for (edge e : biconnectedComponentsGraphs[i].edges) {
+					if (!first) os << ",";
+					os << "{\"from\":" << e->source()->index()
+					   << ",\"to\":" << e->target()->index() << "}";
+					first = false;
+				}
+				os << "]";
+			}
+			os << "]";
+		}
+
+		// =====================================================================
+		// Ranking / unranking (lazy access to a single layout, no enumeration)
+		//
+		// CANONICAL RANK DEFINITION. Layouts are numbered 0..N-1 as follows:
+		//   - rootings are taken in the order of `rootings` (admissible roots);
+		//     rooting i covers the contiguous range [offset_i, offset_i + N_i);
+		//   - within a rooting, the permutable P-nodes (cutpoint children of
+		//     type 0 or 2 with >= 2 blocks) are listed in BFS order from the
+		//     root with IDENTITY child order ("canonical P-node list");
+		//   - the local rank r in [0, N_i) is read as a mixed-radix number
+		//     whose i-th digit (LEAST significant first = first P-node in BFS)
+		//     has base size_i! ; each digit d selects the d-th permutation of
+		//     that P-node's children in LEXICOGRAPHIC order.
+		// This matches the historical enumeration order whenever the BFS visit
+		// order of the cutpoints does not depend on the current permutation
+		// (e.g. a single P-node, or P-nodes on independent branches).
+		// =====================================================================
+
+		/// n! as long long (fits up to n = 20).
+		static long long factorialLL(int n) {
+			long long f = 1;
+			for (int i = 2; i <= n; i++) f *= i;
+			return f;
+		}
+
+		/**
+		 * @brief Lexicographic unrank: return the @p d-th permutation of
+		 *        {0..n-1} in lexicographic order, d in [0, n!).
+		 *
+		 * Standard factorial-number-system decoding (Lehmer code): the k-th
+		 * digit selects which of the remaining elements comes next.
+		 */
+		static std::vector<int> lexUnrank(long long d, int n) {
+			std::vector<int> avail;
+			for (int i = 0; i < n; i++) avail.push_back(i);
+			std::vector<int> perm;
+			for (int i = n; i >= 1; i--) {
+				long long f = factorialLL(i - 1);
+				int idx = (int)(d / f);
+				d %= f;
+				perm.push_back(avail[idx]);
+				avail.erase(avail.begin() + idx);
+			}
+			return perm;
+		}
+
+		/// One permutable group: children of `cutpointValue` of type
+		/// `childType` (0 = source, 2 = sink), `size` >= 2 blocks.
+		struct PNodeRef {
+			int cutpointValue;
+			int childType;
+			int size;
+		};
+
+		/**
+		 * @brief The canonical list of permutable P-nodes for the rooting at
+		 *        @p root: BFS from the root with identity child order.
+		 *
+		 * This is the same visit getNumberOfLayouts performs, so the product
+		 * of the factorials of the sizes equals that rooting's layout count.
+		 *
+		 * @pre rootBCT(root) must have been called (it is, for every
+		 *      admissible root, inside getNumberOfLayouts at construction).
+		 */
+		std::vector<PNodeRef> canonicalPNodes(TreeNode* root) {
+			std::vector<PNodeRef> out;
+			std::queue<TreeNode*> q;
+			q.push(root);
+			while (!q.empty()) {
+				TreeNode* u = q.front(); q.pop();
+				if (u->isCutpoint) {
+					for (int t : {0, 2}) {
+						std::vector<TreeNode*> kids = u->getChildren(root->value, t);
+						if (kids.size() > 1)
+							out.push_back({u->value, t, (int)kids.size()});
+					}
+				}
+				for (int t = 0; t < 3; t++)
+					for (TreeNode* c : u->getChildren(root->value, t)) q.push(c);
+			}
+			return out;
+		}
+
+		/// Number of layouts of the rooting at @p root (product of factorials
+		/// of its canonical P-node sizes).
+		long long layoutsOfRooting(TreeNode* root) {
+			long long prod = 1;
+			for (const PNodeRef& p : canonicalPNodes(root)) prod *= factorialLL(p.size);
+			return prod;
+		}
+
+		/**
+		 * @brief Jump straight to the layout of canonical rank @p k WITHOUT
+		 *        enumerating the previous ones, and return it.
+		 *
+		 * Steps: (1) pick the rooting by cumulative offsets; (2) decode the
+		 * local rank into mixed-radix digits over the canonical P-node list;
+		 * (3) set each P-node's permutation via lexUnrank; (4) produce the
+		 * layout through the same code path as getNext (so BCT/FPQ emission
+		 * and the JSON exporters keep working unchanged).
+		 *
+		 * @return The layout, or an empty Array if @p k is out of range.
+		 */
+		Array<int, int> getLayoutByRank(long long k) {
+			if (k < 0) return Array<int, int>();
+
+			// (1) locate the rooting.
+			long long off = 0;
+			int rho = -1;
+			long long r = 0;
+			for (int i = 0; i < (int)rootings.size(); i++) {
+				TreeNode* root = treeNodeOfComponent[rootings[i]];
+				long long n = layoutsOfRooting(root);
+				if (k < off + n) { rho = i; r = k - off; break; }
+				off += n;
+			}
+			if (rho < 0) return Array<int, int>();   // k out of range
+
+			currentRooting = rho;
+			TreeNode* root = treeNodeOfComponent[rootings[rho]];
+			rootBCT(root);
+			enumerator = BCTPermutationEnumerator(root);
+
+			// (2)+(3) mixed-radix decode, least significant digit = first
+			// P-node in canonical BFS order (mirrors the historical odometer).
+			for (const PNodeRef& p : canonicalPNodes(root)) {
+				long long f = factorialLL(p.size);
+				long long digit = r % f;
+				r /= f;
+				enumerator.permutations[p.cutpointValue][p.childType] =
+					lexUnrank(digit, p.size);
+			}
+			enumerator.lastUsedPermutations = enumerator.permutations;
+
+			// (4) produce THIS layout through the normal getNext path.
+			return getNext();
+		}
+
+		/**
+		 * @brief Emit the counting structure as JSON: for every rooting, its
+		 *        offset, layout count and the sizes of its P-nodes. This is
+		 *        the mixed-radix "shape" the rank is decoded against.
+		 */
+		void writeBasesJson(std::ostream& os) {
+			os << "{\"count\":" << numberOfOneStackLayouts << ",\"rootings\":[";
+			long long off = 0;
+			for (int i = 0; i < (int)rootings.size(); i++) {
+				TreeNode* root = treeNodeOfComponent[rootings[i]];
+				std::vector<PNodeRef> ps = canonicalPNodes(root);
+				long long n = 1;
+				for (const PNodeRef& p : ps) n *= factorialLL(p.size);
+				if (i) os << ",";
+				os << "{\"rooting\":" << i
+				   << ",\"rootBlock\":" << root->value
+				   << ",\"offset\":" << off
+				   << ",\"count\":" << n
+				   << ",\"pnodes\":[";
+				for (size_t j = 0; j < ps.size(); j++) {
+					if (j) os << ",";
+					os << "{\"cutpoint\":" << ps[j].cutpointValue
+					   << ",\"type\":" << ps[j].childType
+					   << ",\"size\":" << ps[j].size << "}";
+				}
+				os << "]}";
+				off += n;
+			}
+			os << "]}" << std::endl;
 		}
 
 	private:
@@ -1224,6 +1477,7 @@ class OneStackLayoutsEnumerator {
 
 		int nextFPQId;                       ///< Counter for unique FPQ node ids.
 		std::vector<FPQNode*> allFPQNodes;   ///< All FPQ nodes created, for cleanup.
+		FPQNode* currentFPQRoot = nullptr;   ///< FPQ tree of the current layout, kept alive after getNext for JSON.
 
 		/**
 		 * @brief Factory: allocate and register an FPQ node of the given type.
@@ -1397,6 +1651,7 @@ class OneStackLayoutsEnumerator {
 		 */
 		FPQNode* buildFPQTree(TreeNode* rootBlock,
 				const std::unordered_map<int, std::unordered_map<int, std::vector<int>>>& currentPermutations) {
+			cleanupFPQ();               // free the previous FPQ tree, if any
 			nextFPQId = 0;
 			allFPQNodes.clear();
 			// The root block has no parent cutpoint -> -1.
@@ -1843,22 +2098,52 @@ void readGraphFromArg(Graph* G, const char* graphString)
 	}
 }
 
+// If arg is the path to an existing file, return its contents; otherwise
+// return arg unchanged (so the CLI accepts a file OR a raw graph string).
+static std::string slurpIfFile(const char* arg) {
+	std::ifstream in(arg, std::ios::binary);
+	if (!in) return std::string(arg);
+	std::ostringstream ss;
+	ss << in.rdbuf();
+	return ss.str();
+}
+
+// Emit a full layout (spine + edges + BCT + FPQ) as one JSON object.
+static void printFullLayoutJson(long long count, long long rank,
+                                Array<int, int>& spine, Graph& G,
+                                OneStackLayoutsEnumerator& e) {
+	std::cout << "{\"count\":" << count << ",\"rank\":" << rank << ",\"spine\":[";
+	bool f = true;
+	for (int v : spine) { std::cout << (f ? "" : ",") << v; f = false; }
+	std::cout << "],\"edges\":[";
+	f = true;
+	for (edge ed : G.edges) {                 // verify these OGDF accessors compile
+		std::cout << (f ? "" : ",") << "[" << ed->source()->index()
+		          << "," << ed->target()->index() << "]";
+		f = false;
+	}
+	std::cout << "],\"blocks\":"; e.writeBlocksJson(std::cout);
+	std::cout << ",\"bct\":";  e.writeBctJson(std::cout);
+	std::cout << ",\"fpq\":";   e.writeFpqJson(std::cout);
+	std::cout << "}" << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
 	Graph G;
 
+	// LEGACY mode (used by the web/WASM frontend via callMain([graphString])):
+	// emit the full text protocol that code_to_append.js parses. UNCHANGED.
 	if (argc == 2) {
-        //std::cout << "input string: " << argv[1] << std::endl;
 		try {
-			readGraphFromArg(&G, argv[1]);
+			std::string g1 = slurpIfFile(argv[1]); readGraphFromArg(&G, g1.c_str());
 			draw(&G, "DAG.svg");
 			OneStackLayoutsEnumerator enumerator = OneStackLayoutsEnumerator(&G);
-			std::cout << "NUMBER OF LAYOUTS: " << enumerator.numberOfLayouts() <<std::endl;
+			std::cout << "NUMBER OF LAYOUTS: " << enumerator.numberOfLayouts() << std::endl;
 			while (enumerator.hasNext()) {
 				Array<int, int> result = enumerator.getNext();
-
 				std::cout << "RESULT: ";
-				for (int n: result) {
+				for (int n : result) {
 					std::cout << n << " ";
 				}
 				std::cout << std::endl << std::endl;
@@ -1867,11 +2152,60 @@ int main(int argc, char* argv[])
 		catch (const std::runtime_error& e) {
 			std::cerr << "runtime error: " << e.what() << std::endl;
 		}
-    }
-	else {
-		std::cout << "error with the number of arguments (must be one string)" << std::endl;
-		return 1;
+		return 0;
 	}
 
-	return 0;
+	// CLI mode: enum <count|first|rank> "<graph>" [k]  ->  JSON on stdout.
+	if (argc >= 3) {
+		std::string cmd = argv[1];
+		if (cmd == "count" || cmd == "first" || cmd == "rank" || cmd == "bases") {
+			long long k = 0;
+			if (cmd == "rank") {
+				if (argc < 4) { std::cerr << "usage: enum rank \"<graph>\" <k>" << std::endl; return 1; }
+				k = std::stoll(argv[3]);
+			}
+
+			// Muzzle the enumerator's debug/protocol output while it runs, so
+			// ONLY our JSON reaches stdout. (The future refactor removes this.)
+			std::ostringstream sink;
+			std::streambuf* realOut = std::cout.rdbuf(sink.rdbuf());
+			try {
+				std::string g2 = slurpIfFile(argv[2]); readGraphFromArg(&G, g2.c_str());
+				OneStackLayoutsEnumerator e(&G);
+				long long n = e.numberOfLayouts();
+
+				if (cmd == "rank" && (k < 0 || k >= n)) {
+					std::cout.rdbuf(realOut);
+					std::cout << "{\"count\":" << n << ",\"error\":\"rank out of range\"}" << std::endl;
+					return 0;
+				}
+
+				Array<int, int> layout;
+				if (cmd != "count" && cmd != "bases" && n > 0)
+					layout = e.getLayoutByRank(k);   // O(1) jump: mixed-radix unrank, no enumeration
+
+				std::cout.rdbuf(realOut);                     // restore stdout BEFORE JSON
+
+				if (cmd == "bases")        e.writeBasesJson(std::cout);
+				else if (cmd == "count")   std::cout << "{\"count\":" << n << "}" << std::endl;
+				else if (n == 0)      std::cout << "{\"count\":0}" << std::endl;
+				else                  printFullLayoutJson(n, k, layout, G, e);
+			}
+			catch (const std::exception& ex) {
+				std::cout.rdbuf(realOut);
+				std::cerr << "error: " << ex.what() << std::endl;
+				std::cout << "{\"error\":\"internal error\"}" << std::endl;
+				return 1;
+			}
+			return 0;
+		}
+	}
+
+	std::cerr << "usage:" << std::endl
+	          << "  enum \"<graph>\"                 (legacy: full text protocol)" << std::endl
+	          << "  enum count \"<graph>\"           (JSON: number of layouts)" << std::endl
+	          << "  enum first \"<graph>\"           (JSON: first layout + BCT + FPQ)" << std::endl
+	          << "  enum rank  \"<graph>\" <k>       (JSON: k-th layout + BCT + FPQ, via unranking)" << std::endl
+	          << "  enum bases \"<graph>\"           (JSON: rooting offsets and P-node sizes)" << std::endl;
+	return 1;
 }

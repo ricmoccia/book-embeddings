@@ -129,46 +129,12 @@ function fileToString() {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('run').addEventListener('click', function() {
         fileToString()
-            .then(fileString => {
-                graph = getGraphFromFileString(fileString);
-                layouts = [];
-                bcts = [];
-                fpqs = [];
-                blocks = [];
-                edgeToBlock = new Map();
-                currentBCT = null;
-                currentFPQ = null;
-                currentBlocks = null;
-                currentIndex = 0;
-                // `callMain` is an Emscripten runtime method. Recent Emscripten
-                // versions no longer leak it to the global scope, so resolve it
-                // from the Module object (with a fallback to a bare global for
-                // older builds). It must be listed in EXPORTED_RUNTIME_METHODS
-                // at compile time, otherwise Module.callMain is undefined too.
-                const wasmCallMain =
-                    (typeof Module !== 'undefined' && Module.callMain) ||
-                    (typeof callMain === 'function' ? callMain : null);
-                if (typeof wasmCallMain !== 'function') {
-                    console.error('callMain is not available: add "callMain" to ' +
-                        'EXPORTED_RUNTIME_METHODS in compile-wasm.ps1 and rebuild.');
-                    return;
-                }
-                wasmCallMain([fileString]);
-                if (numberOfLayouts == 0) {
-                    currentIndex = -1;
-                    updateStatistics();
-                    drawLayout({nodes: [], edges: []}, []);
-                    drawBCT(null);
-                    drawFPQ(null, null);
-                }
-                else {
-                    updateStatistics();
-                    drawLayout(graph, layouts[currentIndex]);
-                    drawBCT(bcts[currentIndex]);
-                    drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
+            .then(function (fileString) {
+                if (!lazyRun(fileString)) {
+                    console.error('WASM runtime not ready yet; try again in a moment.');
                 }
             })
-            .catch(error => {
+            .catch(function (error) {
                 console.error('Error while reading the file:', error);
             });
     });
@@ -176,48 +142,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('next').addEventListener('click', function() {
-        fileToString()
-            .then(fileString => {
-                if (currentIndex == layouts.length - 1) {
-                    // `_printNextLayout` is only present if exported via
-                    // EXPORTED_FUNCTIONS. It currently is not (only `_main` is),
-                    // and main() already enumerates every layout up-front, so
-                    // this branch is a no-op. Guard it to avoid a TypeError if
-                    // someone presses Next on the very last layout.
-                    var computeNextLayout = (typeof Module !== 'undefined')
-                        ? Module["_printNextLayout"] : null;
-                    if (typeof computeNextLayout === 'function') {
-                        computeNextLayout();
-                    }
-                }
-                if (currentIndex < numberOfLayouts - 1) {
-                    currentIndex++;
-                    updateStatistics();
-                    drawLayout(graph, layouts[currentIndex]);
-                    drawBCT(bcts[currentIndex]);
-                    drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
-                }
-            })
-            .catch(error => {
-                if (currentIndex < numberOfLayouts - 1) {
-                    currentIndex++;
-                    updateStatistics();
-                    drawLayout(graph, layouts[currentIndex]);
-                    drawBCT(bcts[currentIndex]);
-                    drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
-                }
-            });
+        if (typeof numberOfLayouts === 'number' && currentIndex < numberOfLayouts - 1) {
+            goToRankLazy(currentIndex + 1);
+        }
     });
 });
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('prev').addEventListener('click', function() {
         if (currentIndex > 0) {
-            currentIndex--;
-            updateStatistics();
-            drawLayout(graph, layouts[currentIndex]);
-            drawBCT(bcts[currentIndex]);
-            drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
+            goToRankLazy(currentIndex - 1);
         }
     });
 });
@@ -340,6 +274,12 @@ function getDataFromWasm(message) {
 
     if (typeof message !== 'string') return;
 
+    // --- JSON line (lazy mode: count/first/rank output) -> capture and stop ---
+    if (message.trim()[0] === '{') {
+        try { lazyLastJson = JSON.parse(message.trim()); } catch (e) {}
+        return;
+    }
+
     // --- Blocks (biconnected decomposition, emitted once) ---
     if (message.startsWith('BLOCKS_BEGIN')) {
         const m = message.match(/count=(\d+)/);
@@ -453,6 +393,142 @@ function getDataFromWasm(message) {
     }
 }
 
+// =============================================================================
+// LAZY EVALUATION (rank/unrank on demand)
+// -----------------------------------------------------------------------------
+// Instead of enumerating every layout up-front, we ask the WASM module for one
+// layout at a time via the CLI-style commands added to main_enum.cpp:
+//     callMain(['count', graph])       -> {"count": N}
+//     callMain(['rank',  graph, k])    -> {count, rank, spine, edges, bct, fpq}
+// The C++ side muzzles its debug/protocol output and prints ONLY the JSON line,
+// which getDataFromWasm captures into `lazyLastJson`. Navigation (Next / Prev /
+// Goto) then costs one unrank call regardless of how many layouts exist, so the
+// app starts instantly even on graphs with astronomically many layouts.
+// =============================================================================
+
+/** The graph currently loaded, as the nodes-then-edges text string. */
+var currentGraphString = '';
+
+/** Last JSON object emitted by the WASM module (set by getDataFromWasm). */
+var lazyLastJson = null;
+
+/**
+ * Invoke the WASM entry point with CLI-style arguments and return the parsed
+ * JSON it produced, or null if the runtime is not ready / it threw.
+ * @param {string[]} args  e.g. ['count', graphStr] or ['rank', graphStr, '5'].
+ * @returns {Object|null}
+ */
+function lazyWasmCall(args) {
+    var cm = (typeof Module !== 'undefined' && Module.callMain)
+          || (typeof callMain === 'function' ? callMain : null);
+    if (typeof cm !== 'function') return null;
+    lazyLastJson = null;
+    try { cm(args); } catch (e) { return null; }
+    return lazyLastJson;
+}
+
+/**
+ * Serialize a parsed graph ({nodes:[{id}], edges:[{from,to}]}) back into the
+ * nodes-then-edges text format the C++ reader expects.
+ * @param {{nodes:Array,edges:Array}} g
+ * @returns {string}
+ */
+function graphToString(g) {
+    return g.nodes.map(function (n) { return n.id; }).join('\n') + '\n'
+         + g.edges.map(function (e) { return e.from + ',' + e.to; }).join('\n');
+}
+
+/**
+ * Convert the nested BCT JSON ({id,kind,value,role,children}) into the flat
+ * {nodes:[{id,kind,value}], edges:[{from,to,type}], root} shape drawBCT wants.
+ * @param {Object} root
+ * @returns {{nodes:Array,edges:Array,root:number}}
+ */
+function flattenBCTJson(root) {
+    var nodes = [], edges = [];
+    (function walk(n) {
+        nodes.push({ id: n.id, kind: n.kind, value: n.value });
+        (n.children || []).forEach(function (c) {
+            edges.push({ from: n.id, to: c.id, type: (c.role !== undefined ? c.role : 1) });
+            walk(c);
+        });
+    })(root);
+    return { nodes: nodes, edges: edges, root: root.id };
+}
+
+/**
+ * Convert the nested FPQ JSON ({id,type,block?,value?,children}) into the flat
+ * {nodes:[{id,type,blockIndex,value}], edges:[{from,to,pos}], root} shape
+ * drawFPQ wants.
+ * @param {Object} root
+ * @returns {{nodes:Array,edges:Array,root:number}}
+ */
+function flattenFPQJson(root) {
+    var nodes = [], edges = [];
+    (function walk(n) {
+        nodes.push({
+            id: n.id,
+            type: n.type,
+            blockIndex: (n.block !== undefined ? n.block : -1),
+            value: (n.value !== undefined ? n.value : -1)
+        });
+        (n.children || []).forEach(function (c, k) {
+            edges.push({ from: n.id, to: c.id, pos: k });
+            walk(c);
+        });
+    })(root);
+    return { nodes: nodes, edges: edges, root: root.id };
+}
+
+/**
+ * Jump to the layout of rank k via unranking (no enumeration) and redraw all
+ * three panels. Uses the currently loaded graph (currentGraphString).
+ * @param {number} k  0-based rank in [0, numberOfLayouts).
+ */
+function goToRankLazy(k) {
+    if (typeof numberOfLayouts === 'number' && (k < 0 || k >= numberOfLayouts)) return;
+    var data = lazyWasmCall(['rank', currentGraphString, String(k)]);
+    if (!data || data.error) {
+        console.warn('rank', k, 'failed:', data && data.error);
+        return;
+    }
+    currentIndex = k;
+    if (data.blocks) {                    // block decomposition -> edge colors
+        blocks = data.blocks;
+        edgeToBlock = buildEdgeToBlock(blocks);
+    }
+    drawLayout(graph, data.spine.map(String));
+    drawBCT(flattenBCTJson(data.bct));
+    drawFPQ(flattenFPQJson(data.fpq), flattenBCTJson(data.bct));
+    updateStatistics();
+}
+
+/**
+ * Lazy replacement for a full "Compute Layouts" run: fetch only the total count
+ * and draw the first layout. Everything else is computed on demand later.
+ * @param {string} fileString  Graph in the nodes-then-edges text format.
+ * @returns {boolean} true if it ran, false if the WASM runtime is not ready yet
+ *                    (so the caller may retry, as tryRunExample does).
+ */
+function lazyRun(fileString) {
+    graph = getGraphFromFileString(fileString);
+    currentGraphString = fileString;
+    currentIndex = 0;
+    var c = lazyWasmCall(['count', fileString]);
+    if (!c || typeof c.count !== 'number') return false;   // runtime not up yet
+    numberOfLayouts = c.count;
+    if (numberOfLayouts === 0) {
+        currentIndex = -1;
+        updateStatistics();
+        drawLayout({ nodes: [], edges: [] }, []);
+        drawBCT(null);
+        drawFPQ(null, null);
+        return true;
+    }
+    goToRankLazy(0);
+    return true;
+}
+
 /**
  * Build the "edge -> block index" lookup map from the block decomposition.
  * The key encodes the unordered edge as "<min>-<max>" so that direction in
@@ -547,7 +623,7 @@ function drawLayout(graph, layout) {
     // VERTICAL spine: nodes stacked top-to-bottom (x = 0); arcs bow to the RIGHT.
     const V = 75;
     graph.nodes.forEach(node => {
-        nodes.add({ id: mapping.get(node.label), label: node.label, x: 0, y: mapping.get(node.label) * V });
+        nodes.add({ id: mapping.get(node.label), label: node.label, x: 0, y: -mapping.get(node.label) * V });
     });
 
     graph.edges.forEach(edge => {
@@ -570,7 +646,7 @@ function drawLayout(graph, layout) {
     });
     const HEAD = maxSpan * V * 0.55;   // tune if arcs clip / too much room
     if (HEAD > 0) {
-        const midY = (i - 1) * V / 2;
+        const midY = -(i - 1) * V / 2;
         const invisible = {
             size: 0, shape: 'dot', label: '',
             color: { background: 'rgba(0,0,0,0)', border: 'rgba(0,0,0,0)' },
@@ -1270,6 +1346,9 @@ var rootingGroups = [];
 /** `bcts.length` the groups were last built for (cache key). @type {number} */
 var rootingGroupsForLength = -1;
 
+/** currentGraphString for which `rootingGroups` was last built (lazy mode). */
+var rootingBasesForGraph = '';
+
 /** `rootingGroupsForLength` the bar segments were last rendered for. */
 var rankBarBuiltForLength = -2;
 
@@ -1315,19 +1394,24 @@ function rootBlockValueOf(bct, i) {
  * Cheap to call on every refresh: it no-ops unless `bcts.length` changed.
  */
 function rebuildRootingGroupsIfNeeded() {
-    if (bcts.length === rootingGroupsForLength && rootingGroups.length > 0) return;
-    rootingGroupsForLength = bcts.length;
+    // Lazy mode: build the rooting groups from the C++ `bases` command
+    // (per-rooting offset + count) instead of the enumerated bcts[] array,
+    // which is empty when layouts are computed on demand. Cached per graph.
+    if (currentGraphString === rootingBasesForGraph && rootingGroups.length > 0) return;
     rootingGroups = [];
-    for (let i = 0; i < bcts.length; i++) {
-        const rb = rootBlockValueOf(bcts[i], i);
-        const last = rootingGroups[rootingGroups.length - 1];
-        if (!last || last.rootBlock !== rb) {
-            rootingGroups.push({ rootBlock: rb, start: i, count: 1 });
-        } else {
-            last.count++;
-        }
+    if (!currentGraphString) { rootingGroupsForLength = -1; return; }
+    const b = lazyWasmCall(['bases', currentGraphString]);
+    if (!b || !b.rootings) { rootingGroupsForLength = -1; return; }
+    rootingBasesForGraph = currentGraphString;
+    for (const r of b.rootings) {
+        rootingGroups.push({
+            rootBlock: r.rootBlock,
+            start: r.offset,
+            count: r.count,
+            end: r.offset + r.count - 1
+        });
     }
-    for (const g of rootingGroups) g.end = g.start + g.count - 1;
+    rootingGroupsForLength = (rootingGroupsForLength || 0) + 1;   // bump: forces the rank bar to re-render
 }
 
 /**
@@ -1381,11 +1465,7 @@ function parseUnrank(text) {
 function goToLayout(k) {
     const N = rankTotal();
     if (!(Number.isInteger(k) && k >= 0 && k < N)) return false;
-    currentIndex = k;
-    updateStatistics();
-    drawLayout(graph, layouts[currentIndex]);
-    drawBCT(bcts[currentIndex]);
-    drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
+    goToRankLazy(k);   // lazy: unrank on demand + draw all three panels
     return true;
 }
 
@@ -2221,30 +2301,10 @@ console.log("FRONTEND BUILD: 2026-06-13-1");
         currentBlocks = null;
         currentIndex = 0;
 
-        const SENTINEL = -999;
-        numberOfLayouts = SENTINEL; // only the C++ output parser overwrites this
-        try {
-            wasmCallMain([fileString]);
-        } catch (e) {
-            return false; // runtime not initialized yet; caller will retry
-        }
-        if (numberOfLayouts === SENTINEL) {
-            return false; // main() did not actually run; caller will retry
-        }
-
-        if (numberOfLayouts == 0) {
-            currentIndex = -1;
-            updateStatistics();
-            drawLayout({ nodes: [], edges: [] }, []);
-            drawBCT(null);
-            drawFPQ(null, null);
-        } else {
-            updateStatistics();
-            drawLayout(graph, layouts[currentIndex]);
-            drawBCT(bcts[currentIndex]);
-            drawFPQ(fpqs[currentIndex], bcts[currentIndex]);
-        }
-        return true;
+        // Lazy startup: fetch the count and draw the first layout only.
+        // lazyRun returns false while the runtime is not ready, so tryRunExample
+        // keeps retrying exactly as before.
+        return lazyRun(fileString);
     }
 
     var hasRun = false;
