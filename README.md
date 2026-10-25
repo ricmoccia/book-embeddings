@@ -40,3 +40,12 @@ Refer to the `doc` folder for detailed instructions on how to use the `OneStackL
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
+
+## Compilazione locale con OGDF
+
+`code/CMakeLists.txt` cerca OGDF in quest'ordine: `-DOGDF_DIR=<percorso>`, variabile d'ambiente `OGDF_DIR`, oppure `../ogdf` accanto al repository.
+Per la build WebAssembly, OGDF va compilato con la patch `patches/ogdf-emscripten.patch` (salta `-march` con Emscripten):
+
+```bash
+cd ../ogdf && git apply ../book-embeddings/patches/ogdf-emscripten.patch
+```

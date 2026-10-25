@@ -4,7 +4,21 @@ project(BookEmbeddingsLocal)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(OGDF_DIR "C:/Users/riccardo/Desktop/book-embeddings/ogdf")
+# Cartella di OGDF (sorgenti + build/). Ordine di ricerca:
+#   1. -DOGDF_DIR=...  sulla riga di comando di cmake
+#   2. variabile d'ambiente OGDF_DIR
+#   3. ../../ogdf rispetto a questa cartella (clone di OGDF accanto al repository)
+set(OGDF_DIR "" CACHE PATH "Cartella di OGDF (contiene include/ e build/)")
+if(NOT OGDF_DIR AND DEFINED ENV{OGDF_DIR})
+    set(OGDF_DIR "$ENV{OGDF_DIR}" CACHE PATH "Cartella di OGDF (contiene include/ e build/)" FORCE)
+endif()
+if(NOT OGDF_DIR)
+    get_filename_component(_ogdf_default "${CMAKE_CURRENT_SOURCE_DIR}/../../ogdf" ABSOLUTE)
+    set(OGDF_DIR "${_ogdf_default}" CACHE PATH "Cartella di OGDF (contiene include/ e build/)" FORCE)
+endif()
+if(NOT EXISTS "${OGDF_DIR}/include/ogdf")
+    message(FATAL_ERROR "OGDF non trovato in '${OGDF_DIR}': passa -DOGDF_DIR=<percorso> o imposta la variabile d'ambiente OGDF_DIR")
+endif()
 set(OGDF_BUILD "${OGDF_DIR}/build")
 
 add_executable(book_enum main_enum.cpp)
